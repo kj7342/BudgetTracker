@@ -145,8 +145,9 @@ dialog {
   padding: 20px;
   background: var(--dialog-bg);
   color: var(--text);
-  width: 90vw;
+  width: 80vw;
   max-width: 420px;
+  margin: auto;
   box-shadow: 0 10px 30px rgba(0,0,0,.4);
 }
 dialog form {
