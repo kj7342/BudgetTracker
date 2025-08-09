@@ -1,17 +1,3 @@
-function attachTabBar() {
-  $$('.tabbar button').forEach(b => {
-    b.onclick = () => showTab(b.dataset.tab);
-  });
-}
-
-document.addEventListener('DOMContentLoaded', async () => {
-  attachTabBar();           // ✅ binds bottom menu clicks
-  await monthInit();
-  wireCancelButtons();      // ✅ Cancel buttons work everywhere
-  await render();
-});
-
-
 import { db } from './db.js';
 import { FaceID } from './faceid.js';
 
@@ -24,13 +10,20 @@ const monthStart = (d=new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).
 // Helper: make all Cancel buttons close their parent <dialog>
 function wireCancelButtons(scope = document) {
   scope.querySelectorAll('button[value="cancel"]').forEach(btn => {
-    // Avoid double-binding if dialog is reopened
-    btn.__btCancelWired || btn.addEventListener('click', e => {
-      e.preventDefault(); // bypass form required/validation
+    if (btn.__btCancelWired) return;
+    btn.addEventListener('click', e => {
+      e.preventDefault(); // bypass required/validation
       const dlg = btn.closest('dialog');
       if (dlg) dlg.close('cancel');
     });
     btn.__btCancelWired = true;
+  });
+}
+
+// Attach bottom tab bar listeners after DOM exists
+function attachTabBar() {
+  $$('.tabbar button').forEach(b => {
+    b.onclick = () => showTab(b.dataset.tab);
   });
 }
 
@@ -72,7 +65,6 @@ function num(v){ const n = Number(v); return isFinite(n) ? n : null; }
 function isQuiet(now, s){
   const h = now.getHours();
   if (!s.quiet) return false;
-  // fixed typo: s_qEnd -> s.qEnd
   return (s.qStart<=s.qEnd) ? (h>=s.qStart && h<s.qEnd) : (h>=s.qStart || h<s.qEnd);
 }
 
@@ -133,16 +125,22 @@ async function moveFunds(fromId, toId, amount){
   return true;
 }
 
-// ---- UI wiring ----
-const tabs = $$('.tabbar button');
-tabs.forEach(b=> b.addEventListener('click', ()=>showTab(b.dataset.tab)));
-$('#add-tx-btn')?.addEventListener('click', ()=>openAddTx());
-window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); const b = $('#installBtn'); b.hidden=false; b.onclick=async ()=>{ e.prompt(); b.hidden=true; }; });
+// PWA install prompt + SW
+window.addEventListener('beforeinstallprompt', (e) => {
+  e.preventDefault();
+  const b = $('#installBtn');
+  if (!b) return;
+  b.hidden = false;
+  b.onclick = async ()=>{ e.prompt(); b.hidden = true; };
+});
+
 if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
 
+// Boot
 document.addEventListener('DOMContentLoaded', async ()=>{
+  attachTabBar();        // ✅ bottom menu now works
+  wireCancelButtons();   // ✅ global cancel safety net
   await monthInit();
-  wireCancelButtons();   // global safety net
   await render();
 });
 
@@ -167,7 +165,7 @@ async function renderLock(){
 }
 
 function showTab(name, silent){
-  tabs.forEach(b => b.classList.toggle('active', b.dataset.tab===name));
+  $$('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
   const tpl = document.querySelector(`#tpl-${name}`);
   $('#view').innerHTML = tpl.innerHTML;
   if (!silent) history.replaceState({}, '', `#${name}`);
@@ -340,7 +338,7 @@ async function openAddTx(){
   const select = f.category; select.innerHTML = '<option value="">Uncategorized</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   f.amount.value=''; f.date.value = todayStr(); f.note.value='';
   dlg.showModal();
-  wireCancelButtons(dlg); // make Cancel always close
+  wireCancelButtons(dlg); // ensure Cancel works
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -358,8 +356,7 @@ async function openAddTx(){
 
 // Move Funds
 async function openMoveFunds(fromId){
-  const dlg = $('#dlg-move'); const f=$('#form-move'); const cats = await categories();
-  // Ensure buffer exists
+  const dlg = $('#dlg-move'); const f=$('#form-move');
   const existing = (await categories()).find(c=>c.name==='General Buffer');
   if (!existing) await ensureBuffer();
   const list = await categories();
@@ -367,7 +364,7 @@ async function openMoveFunds(fromId){
   const options = list.filter(include).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   f.from.innerHTML = options; f.to.innerHTML = options; if (fromId) f.from.value = fromId; f.amount.value = '';
   dlg.showModal();
-  wireCancelButtons(dlg); // make Cancel always close
+  wireCancelButtons(dlg); // ensure Cancel works
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -384,9 +381,9 @@ async function openHistory(){
   const dlg = $('#dlg-history'); const ul = $('#dlg-hist-list'); const h = await events();
   ul.innerHTML = h.map(e => `<li>${histTitle(e)} <span class="label">${new Date(e.date).toLocaleString()}</span></li>`).join('');
   dlg.showModal();
-  wireCancelButtons(dlg); // make Cancel always close
+  wireCancelButtons(dlg); // ensure Cancel works
   $('#dlg-history-close').onclick = ()=> dlg.close();
 }
 
-// Route on load
+// Route on load (supports deep links)
 if (location.hash){ const t = location.hash.slice(1); const btn = document.querySelector(`.tabbar button[data-tab="${t}"]`); if (btn) btn.click(); }
