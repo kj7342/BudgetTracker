@@ -1,7 +1,7 @@
 export const db = (() => {
   const DB_NAME = 'budget-db';
   // Bump the version whenever the database schema changes
-  const VER = 4;
+  const VER = 5;
   let _db;
   function open() {
     return new Promise((resolve, reject) => {
@@ -22,6 +22,12 @@ export const db = (() => {
         if (!d.objectStoreNames.contains('cardTransactions')) {
           const os = d.createObjectStore('cardTransactions', { keyPath: 'id' });
           os.createIndex('byCard','cardId');
+        }
+        // Stores for linked bank accounts and their transactions
+        if (!d.objectStoreNames.contains('bankAccounts')) d.createObjectStore('bankAccounts', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('bankTransactions')) {
+          const os = d.createObjectStore('bankTransactions', { keyPath: 'id' });
+          os.createIndex('byAccount','accountId');
         }
       };
       req.onsuccess = () => resolve(_db = req.result);
