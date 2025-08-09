@@ -79,10 +79,6 @@ const Settings = {
     lastSyncAt: null,
     monthlyBudget: 2000,
     startDay: 1,
-    envEnabled: true,
-    envAuto: true,
-    envRollover: false,
-    envHardBlock: false,
     darkMode: true,
     quiet: true, qStart: 22, qEnd: 7
   },
@@ -91,78 +87,16 @@ const Settings = {
 };
 
 async function categories(){ return await db.all('categories'); }
-async function upsertCategory(obj){ const id = obj.id || crypto.randomUUID(); await db.put('categories', { id, name: obj.name, cap: num(obj.cap), envelope: num(obj.envelope) }); return id; }
+async function upsertCategory(obj){ const id = obj.id || crypto.randomUUID(); await db.put('categories', { id, name: obj.name, cap: num(obj.cap) }); return id; }
 async function deleteCategory(id){ await db.del('categories', id); }
 async function transactions(){ return (await db.all('transactions')).sort((a,b)=>b.date.localeCompare(a.date)); }
 async function addTransaction(t){ t.id=t.id||crypto.randomUUID(); await db.put('transactions', t); }
-async function getCarry(month, catId){ const rec = await db.get('carry', `${month}|${catId}`); return rec?.amount || 0; }
-async function setCarry(month, catId, amount){ await db.put('carry', { id:`${month}|${catId}`, month, categoryId:catId, amount }); }
-async function addEvent(e){ await db.put('events', { id:crypto.randomUUID(), date:new Date().toISOString(), ...e }); }
-async function events(){ return (await db.all('events')).sort((a,b)=>b.date.localeCompare(a.date)); }
+async function expenses(){ return await db.all('expenses'); }
+async function upsertExpense(obj){ const id = obj.id || crypto.randomUUID(); await db.put('expenses', { id, name: obj.name, amount: num(obj.amount), paid: !!obj.paid }); return id; }
+async function toggleExpensePaid(id, paid){ const e = await db.get('expenses', id); if (e){ e.paid = paid; await db.put('expenses', e); } }
+async function deleteExpense(id){ await db.del('expenses', id); }
 
 function num(v){ const n = Number(v); return isFinite(n) ? n : null; }
-function isQuiet(now, s){
-  const h = now.getHours();
-  if (!s.quiet) return false;
-  return (s.qStart<=s.qEnd) ? (h>=s.qStart && h<s.qEnd) : (h>=s.qStart || h<s.qEnd);
-}
-
-async function ensureBuffer(){
-  const cats = await categories();
-  const existing = cats.find(c => c.name === 'General Buffer');
-  if (existing) return existing;
-  const id = await upsertCategory({name:'General Buffer'});
-  return (await categories()).find(c=>c.id===id);
-}
-
-async function monthInit(now = new Date()){
-  const s = await Settings.get(); if (!s.envEnabled || !s.envAuto) return;
-  const start = monthStart(now);
-  const anyCarry = (await db.all('carry')).some(c=>c.month===start);
-  if (anyCarry) return;
-  const tx = await transactions();
-  const buffer = await ensureBuffer();
-  await setCarry(start, buffer.id, (await getCarry(start, buffer.id)) || 0);
-  const cats = await categories();
-  if (s.envRollover){
-    const prev = monthStart(new Date(now.getFullYear(), now.getMonth()-1, 1));
-    for (const c of cats){
-      if (!c.envelope) continue;
-      const spent = tx.filter(t=>t.categoryId===c.id && t.date>=prev && t.date<start).reduce((a,b)=>a+Number(b.amount),0);
-      const leftover = Math.max(0, Number(c.envelope)-spent);
-      await setCarry(start, c.id, leftover);
-      if (leftover>0) await addEvent({type:'rollover', fromName:c.name, toName:c.name, amount:leftover, note:'Rollover into new month'});
-    }
-  } else {
-    for (const c of cats) if (c.envelope!=null) await setCarry(start, c.id, 0);
-  }
-  await Log.add('Month initialized');
-}
-
-async function remainingForCategory(catId, now=new Date()){
-  const start = monthStart(now), end = monthStart(new Date(now.getFullYear(), now.getMonth()+1, 1));
-  const cats = await categories(); const c = cats.find(x=>x.id===catId); if (!c) return 0;
-  const carry = await getCarry(start, catId);
-  const tx = await transactions();
-  const spent = tx.filter(t=>t.categoryId===catId && t.date>=start && t.date<end).reduce((a,b)=>a+Number(b.amount),0);
-  const alloc = Number(c.envelope||0);
-  return (alloc + Number(carry||0)) - spent;
-}
-
-async function moveFunds(fromId, toId, amount){
-  if (fromId===toId) return false;
-  const start = monthStart();
-  const fromRem = await remainingForCategory(fromId);
-  if (amount > fromRem) return false;
-  const fromCarry = await getCarry(start, fromId);
-  const toCarry = await getCarry(start, toId);
-  await setCarry(start, fromId, fromCarry - amount);
-  await setCarry(start, toId, toCarry + amount);
-  const cats = await categories();
-  await addEvent({type:'transfer', fromName: cats.find(c=>c.id===fromId)?.name, toName: cats.find(c=>c.id===toId)?.name, amount});
-  await Log.add(`Moved ${amount} from ${cats.find(c=>c.id===fromId)?.name} to ${cats.find(c=>c.id===toId)?.name}`);
-  return true;
-}
 
 // PWA install prompt + SW
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -188,7 +122,6 @@ document.addEventListener('DOMContentLoaded', async ()=>{
   wireCancelButtons();
   const s = await Settings.get();
   applyTheme(s.darkMode);
-  await monthInit();
   await render();
 });
 
@@ -225,7 +158,7 @@ function showTab(name, silent){
   if (name==='summary') renderSummary();
   if (name==='transactions') renderTx();
   if (name==='categories') renderCats();
-  if (name==='envelopes') renderEnvelopes();
+  if (name==='expenses') renderExpenses();
   if (name==='settings') renderSettings();
   if (name==='importexport') renderImportExport();
 }
@@ -242,17 +175,13 @@ async function renderSummary(){
   const pct = Math.min(100, Math.round(100*spent/Number(s.monthlyBudget||1)));
   $('#sum-progress').style.width = pct + '%';
 
-  const cats = await categories();
-  let allocated=0, remaining=0;
-  for (const c of cats){
-    if (c.envelope!=null){
-      const rem = await remainingForCategory(c.id);
-      remaining += rem; allocated += Number(c.envelope||0);
-    }
-  }
-  $('#env-allocated').textContent = fmt(allocated);
-  $('#env-remaining').textContent = fmt(remaining);
+  const exps = await expenses();
+  const allocated = exps.reduce((a,b)=>a+Number(b.amount||0),0);
+  const remaining = Number(s.monthlyBudget||0) - allocated;
+  $('#exp-allocated').textContent = fmt(allocated);
+  $('#exp-remaining').textContent = fmt(remaining);
 
+  const cats = await categories();
   const warnings = [];
   for (const c of cats){
     if (c.cap!=null){
@@ -264,7 +193,7 @@ async function renderSummary(){
   if (warnings.length){ capBox.style.display='block'; capBox.querySelector('#cap-list').innerHTML = warnings.map(w=>`<li>${w}</li>`).join(''); }
   else capBox.style.display='none';
 
-  $('#add-tx-btn').addEventListener('click', ()=>openAddTx());
+  $('#exp-manage').addEventListener('click', ()=>showTab('expenses'));
 }
 
 // Transactions
@@ -283,27 +212,21 @@ async function renderCats(){
   $('#cat-form').addEventListener('submit', async (e)=>{
     e.preventDefault();
     const f = e.target;
-    await upsertCategory({ name:f.name.value.trim(), cap:f.cap.value, envelope:f.env.value });
+    await upsertCategory({ name:f.name.value.trim(), cap:f.cap.value });
     f.reset(); renderCats();
   });
   const ul = $('#cat-list');
-  ul.innerHTML = cats.map(c => `<li class="row between"><div><b>${c.name}</b><div class="label">Cap: ${c.cap!=null?fmt(c.cap):'—'} • Envelope: ${c.envelope!=null?fmt(c.envelope):'—'}</div></div><button data-id="${c.id}" class="ghost">Delete</button></li>`).join('');
+  ul.innerHTML = cats.map(c => `<li class="row between"><div><b>${c.name}</b><div class="label">Cap: ${c.cap!=null?fmt(c.cap):'—'}</div></div><button data-id="${c.id}" class="ghost">Delete</button></li>`).join('');
   ul.querySelectorAll('button[data-id]').forEach(b=> b.onclick = async ()=>{ await deleteCategory(b.dataset.id); renderCats(); });
 }
 
-// Envelopes
-async function renderEnvelopes(){
-  const list = $('#env-list'); const cats = await categories(); const tx = await transactions(); const start = monthStart(); const end = monthStart(new Date(new Date().getFullYear(), new Date().getMonth()+1, 1));
-  const rows = await Promise.all(cats.map(async c => {
-    const alloc = Number(c.envelope||0);
-    const carry = await getCarry(start, c.id);
-    const spent = tx.filter(t=>t.categoryId===c.id && t.date>=start && t.date<end).reduce((a,b)=>a+Number(b.amount),0);
-    const remaining = alloc + Number(carry||0) - spent;
-    return { id:c.id, name:c.name, alloc, spent, remaining };
-  }));
-  list.innerHTML = rows.map(r => `<li class="row between"><div><b>${r.name}</b><div class="label">Allocated: ${fmt(r.alloc)} • Spent: ${fmt(r.spent)}</div></div><div class="${r.remaining<0?'neg':''}">${fmt(r.remaining)}</div></li>`).join('');
-  $('#move-funds').onclick = async ()=> openMoveFunds();
-  $('#history-btn').onclick = async ()=> openHistory();
+async function renderExpenses(){
+  const list = $('#expense-list'); const exps = await expenses();
+  list.innerHTML = exps.map(e => `<li class="row between${e.paid?' paid':''}"><div><b>${e.name}</b></div><div class="row"><div>${fmt(e.amount)}</div><input type="checkbox" data-id="${e.id}" ${e.paid?'checked':''}></div></li>`).join('');
+  list.querySelectorAll('input[type="checkbox"]').forEach(ch=>{
+    ch.onchange = async ()=>{ await toggleExpensePaid(ch.dataset.id, ch.checked); renderExpenses(); renderSummary(); };
+  });
+  $('#expense-add').onclick = ()=> openAddExpense();
 }
 
 // Settings
@@ -321,10 +244,6 @@ async function renderSettings(){
 
   $('#set-budget').value = s.monthlyBudget;
   $('#set-startday').value = s.startDay;
-  $('#set-env-enabled').checked = s.envEnabled;
-  $('#set-env-auto').checked = s.envAuto;
-  $('#set-env-roll').checked = s.envRollover;
-  $('#set-env-hard').checked = s.envHardBlock;
   $('#set-quiet').checked = s.quiet;
   $('#set-qstart').value = s.qStart;
   $('#set-qend').value = s.qEnd;
@@ -332,10 +251,6 @@ async function renderSettings(){
     await Settings.save({
       monthlyBudget: Number($('#set-budget').value||0),
       startDay: Number($('#set-startday').value||1),
-      envEnabled: $('#set-env-enabled').checked,
-      envAuto: $('#set-env-auto').checked,
-      envRollover: $('#set-env-roll').checked,
-      envHardBlock: $('#set-env-hard').checked,
       quiet: $('#set-quiet').checked,
       qStart: Number($('#set-qstart').value||22),
       qEnd: Number($('#set-qend').value||7)
@@ -343,7 +258,6 @@ async function renderSettings(){
     await Log.add('Settings saved'); alert('Saved');
   };
 
-  $('#diag-run').onclick = async ()=>{ await monthInit(); alert('Month initialized'); };
   $('#diag-clear').onclick = async ()=>{ await Log.clear(); alert('Logs cleared'); };
   $('#diag-logs').textContent = (await Log.all()).join('\n');
 }
@@ -372,19 +286,11 @@ async function renderImportExport(){
     }
     alert('Imported'); render();
   };
-  const h = await events();
-  $('#hist-list').innerHTML = h.map(e => `<li>${histTitle(e)} <span class="label">${new Date(e.date).toLocaleString()}</span></li>`).join('');
-}
-function histTitle(e){
-  if (e.type==='transfer') return `Moved ${fmt(e.amount)} from ${e.fromName} to ${e.toName}`;
-  if (e.type==='rollover') return `Rolled over ${fmt(e.amount)} in ${e.fromName}`;
-  if (e.type==='adjust') return `Adjusted ${fmt(e.amount)} — ${e.note||''}`;
-  return `${e.type} ${fmt(e.amount)}`;
 }
 
 // Add Transaction
 async function openAddTx(){
-  const dlg = $('#dlg-add-tx'); const f = $('#form-add-tx'); const cats = await categories(); const s = await Settings.get();
+  const dlg = $('#dlg-add-tx'); const f = $('#form-add-tx'); const cats = await categories();
   const select = f.category; select.innerHTML = '<option value="">Uncategorized</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   f.amount.value=''; f.date.value = todayStr(); f.note.value='';
   dlg.showModal();
@@ -393,47 +299,22 @@ async function openAddTx(){
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
       const amount = Number(f.amount.value||0); const date = f.date.value; const categoryId = f.category.value || null; const note = f.note.value || '';
-      if (categoryId){ const rem = await remainingForCategory(categoryId);
-        if (amount > rem){
-          if (s.envHardBlock){ alert('This would overspend the envelope. Move funds first.'); return openMoveFunds(categoryId); }
-          else if (!isQuiet(new Date(), s) && !confirm('This will put the envelope below zero. Proceed?')) { return; }
-        }
-      }
       await addTransaction({amount, date, note, categoryId}); await render();
     }
   };
 }
-
-// Move Funds
-async function openMoveFunds(fromId){
-  const dlg = $('#dlg-move'); const f=$('#form-move'); const cats = await categories();
-  // Ensure buffer exists
-  const existing = (await categories()).find(c=>c.name==='General Buffer');
-  if (!existing) await ensureBuffer();
-  const list = await categories();
-  function include(c){ return c.envelope!=null || c.name==='General Buffer'; }
-  const options = list.filter(include).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  f.from.innerHTML = options; f.to.innerHTML = options; if (fromId) f.from.value = fromId; f.amount.value = '';
+async function openAddExpense(){
+  const dlg = $('#dlg-add-expense'); const f = $('#form-add-expense');
+  f.name.value=''; f.amount.value='';
   dlg.showModal();
   wireCancelButtons(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
-      const from = f.from.value, to = f.to.value, amount = Number(f.amount.value||0);
-      if (!from || !to || from===to || !(amount>0)) return;
-      const ok = await moveFunds(from, to, amount);
-      if (!ok) alert('Not enough remaining in source envelope.');
-      await render();
+      await upsertExpense({ name:f.name.value.trim(), amount:f.amount.value, paid:false });
+      renderExpenses(); renderSummary();
     }
   };
-}
-
-async function openHistory(){
-  const dlg = $('#dlg-history'); const ul = $('#dlg-hist-list'); const h = await events();
-  ul.innerHTML = h.map(e => `<li>${histTitle(e)} <span class="label">${new Date(e.date).toLocaleString()}</span></li>`).join('');
-  dlg.showModal();
-  wireCancelButtons(dlg);
-  $('#dlg-history-close').onclick = ()=> dlg.close();
 }
 
 // Route on load

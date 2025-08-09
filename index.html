@@ -23,7 +23,7 @@
   <aside id="menuPanel" class="menu hidden" role="menu">
     <button type="button" data-tab="summary" role="menuitem">Summary</button>
     <button type="button" data-tab="transactions" role="menuitem">Transactions</button>
-    <button type="button" data-tab="envelopes" role="menuitem">Envelopes</button>
+    <button type="button" data-tab="expenses" role="menuitem">Expenses</button>
     <button type="button" data-tab="categories" role="menuitem">Categories</button>
     <button type="button" data-tab="settings" role="menuitem">Settings</button>
     <button type="button" data-tab="importexport" role="menuitem">Import/Export</button>
@@ -66,13 +66,13 @@
       </div>
 
       <div class="card">
-        <h3>Envelopes</h3>
+        <h3>Living Expenses</h3>
         <div class="row">
-          <div>Allocated: <b id="env-allocated">$0.00</b></div>
+          <div>Allocated: <b id="exp-allocated">$0.00</b></div>
           <div style="flex:1"></div>
-          <div>Remaining: <b id="env-remaining">$0.00</b></div>
+          <div>Remaining: <b id="exp-remaining">$0.00</b></div>
         </div>
-        <button id="add-tx-btn" class="primary" type="button">Add Transaction</button>
+        <button id="exp-manage" class="primary" type="button">Manage Expenses</button>
       </div>
     </section>
   </template>
@@ -93,23 +93,19 @@
       <form id="cat-form" class="row wrap">
         <input name="name" placeholder="Name" required>
         <input name="cap" placeholder="Monthly Cap (optional)" inputmode="decimal">
-        <input name="env" placeholder="Envelope Allocation (optional)" inputmode="decimal">
         <button class="primary">Add</button>
       </form>
       <ul id="cat-list" class="list"></ul>
     </section>
   </template>
 
-  <template id="tpl-envelopes">
+  <template id="tpl-expenses">
     <section>
       <div class="row">
-        <h2>Envelope Budgets</h2>
-        <div class="row">
-          <button id="move-funds" class="ghost" type="button">Move Funds</button>
-          <button id="history-btn" class="ghost" type="button">History</button>
-        </div>
+        <h2>Living Expenses</h2>
+        <button id="expense-add" class="primary" type="button">Add</button>
       </div>
-      <ul id="env-list" class="list"></ul>
+      <ul id="expense-list" class="list"></ul>
     </section>
   </template>
 
@@ -139,59 +135,33 @@
         <button id="set-save" class="primary" type="button">Save</button>
       </div>
 
-      <div class="card">
-        <h3>Envelope Mode</h3>
-        <label class="row between">
-          <span>Enable Envelopes</span>
-          <input id="set-env-enabled" type="checkbox" checked>
-        </label>
-        <label class="row between">
-          <span>Auto Replenish Monthly</span>
-          <input id="set-env-auto" type="checkbox" checked>
-        </label>
-        <label class="row between">
-          <span>Rollover leftover into next month</span>
-          <input id="set-env-roll" type="checkbox">
-        </label>
-        <label class="row between">
-          <span>Hard block overspending</span>
-          <input id="set-env-hard" type="checkbox">
-        </label>
-      </div>
-
-      <div class="card">
-        <h3>Quiet Hours</h3>
-        <label class="row between"><span>Silence at Night</span><input id="set-quiet" type="checkbox" checked></label>
+        <div class="card">
+          <h3>Quiet Hours</h3>
+          <label class="row between"><span>Silence at Night</span><input id="set-quiet" type="checkbox" checked></label>
         <label>Quiet Start Hour <input id="set-qstart" type="number" min="0" max="23" value="22"></label>
         <label>Quiet End Hour <input id="set-qend" type="number" min="0" max="23" value="7"></label>
       </div>
 
-      <div class="card">
-        <h3>Diagnostics</h3>
-        <button id="diag-run" class="ghost" type="button">Run Month Init</button>
-        <button id="diag-clear" class="ghost" type="button">Clear Logs</button>
-        <details>
-          <summary>Logs</summary>
-          <pre id="diag-logs"></pre>
-        </details>
-      </div>
+        <div class="card">
+          <h3>Diagnostics</h3>
+          <button id="diag-clear" class="ghost" type="button">Clear Logs</button>
+          <details>
+            <summary>Logs</summary>
+            <pre id="diag-logs"></pre>
+          </details>
+        </div>
     </section>
   </template>
 
   <template id="tpl-importexport">
-    <section>
-      <h2>Import / Export</h2>
-      <div class="card">
-        <button id="export-csv" class="primary" type="button">Export Transactions CSV</button>
-        <input type="file" id="import-file" accept=".csv,text/csv">
-      </div>
-
-      <div class="card">
-        <h3>Envelope History</h3>
-        <ul id="hist-list" class="list"></ul>
-      </div>
-    </section>
-  </template>
+      <section>
+        <h2>Import / Export</h2>
+        <div class="card">
+          <button id="export-csv" class="primary" type="button">Export Transactions CSV</button>
+          <input type="file" id="import-file" accept=".csv,text/csv">
+        </div>
+      </section>
+    </template>
 
   <dialog id="dlg-add-tx">
     <form method="dialog" id="form-add-tx">
@@ -209,23 +179,16 @@
     </form>
   </dialog>
 
-  <dialog id="dlg-move">
-    <form method="dialog" id="form-move">
-      <h3>Move Funds</h3>
-      <label>From <select name="from"></select></label>
-      <label>To <select name="to"></select></label>
+  <dialog id="dlg-add-expense">
+    <form method="dialog" id="form-add-expense">
+      <h3>Add Expense</h3>
+      <label>Name <input name="name" required></label>
       <label>Amount <input name="amount" inputmode="decimal" required></label>
       <menu class="row between">
         <button value="cancel">Cancel</button>
-        <button class="primary" value="ok">Move</button>
+        <button class="primary" value="ok">Save</button>
       </menu>
     </form>
-  </dialog>
-
-  <dialog id="dlg-history">
-    <h3>Envelope History</h3>
-    <ul id="dlg-hist-list" class="list"></ul>
-    <menu class="row right"><button id="dlg-history-close" type="button">Close</button></menu>
   </dialog>
 
 </body>
