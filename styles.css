@@ -69,6 +69,14 @@ html, body { height: 100%; }
   opacity: 0;
   pointer-events: none;
   transition: opacity .2s;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.list li .trash svg {
+  width: 24px;
+  height: 24px;
 }
 input, select, button { font-size: 16px; }
 input, select { width: 100%; padding: 8px; border-radius: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); }
