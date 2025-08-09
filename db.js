@@ -21,11 +21,36 @@ export const db = (() => {
       req.onerror = () => reject(req.error);
     });
   }
-  function tx(names, mode='readonly') { return open().then(d => d.transaction(names, mode)); }
-  async function get(store, key) { const t = await tx([store]); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.get(key); r.onsuccess=()=>res(r.result); r.onerror=()=>rej(r.error) }); }
-  async function put(store, value) { const t = await tx([store],'readwrite'); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.put(value); r.onsuccess=()=>res(value); r.onerror=()=>rej(r.error) }); }
-  async function del(store, key) { const t = await tx([store],'readwrite'); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.delete(key); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }); }
-  async function all(store) { const t = await tx([store]); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>rej(r.error) }); }
-  async function clear(store) { const t = await tx([store],'readwrite'); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.clear(); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }); }
+  async function transaction(names, mode = 'readonly') {
+    const d = await open();
+    return d.transaction(names, mode);
+  }
+  function wrapRequest(req) {
+    return new Promise((resolve, reject) => {
+      req.onsuccess = () => resolve(req.result);
+      req.onerror = () => reject(req.error);
+    });
+  }
+  async function get(store, key) {
+    const t = await transaction([store]);
+    return wrapRequest(t.objectStore(store).get(key));
+  }
+  async function put(store, value) {
+    const t = await transaction([store], 'readwrite');
+    await wrapRequest(t.objectStore(store).put(value));
+    return value;
+  }
+  async function del(store, key) {
+    const t = await transaction([store], 'readwrite');
+    await wrapRequest(t.objectStore(store).delete(key));
+  }
+  async function all(store) {
+    const t = await transaction([store]);
+    return (await wrapRequest(t.objectStore(store).getAll())) || [];
+  }
+  async function clear(store) {
+    const t = await transaction([store], 'readwrite');
+    await wrapRequest(t.objectStore(store).clear());
+  }
   return { get, put, del, all, clear };
 })();
