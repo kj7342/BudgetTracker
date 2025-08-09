@@ -19,6 +19,7 @@ function wireCancelButtons(scope = document) {
     btn.__btCancelWired = true;
   });
 }
+//test
 
 // Attach bottom tab bar with event delegation (works across re-renders)
 function attachTabBar() {
