@@ -1,4 +1,4 @@
-const CACHE = 'bt-v8'; // cache bump
+const CACHE = 'bt-v9'; // cache bump
 const ASSETS = [
   './','./index.html','./styles.css','./app.js','./db.js','./faceid.js','./manifest.webmanifest',
   './icons/icon-192.png','./icons/icon-512.png'
