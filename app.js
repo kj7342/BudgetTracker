@@ -108,21 +108,22 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 if ('serviceWorker' in navigator){
-  navigator.serviceWorker.register('./sw.js').then(reg => {
-    function promptUpdate(worker){
-      if (confirm('Update available. Reload?')){
-        worker.postMessage('SKIP_WAITING');
-      }
+  const updateBtn = $('#updateBtn');
+  navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'}).then(reg => {
+    function showUpdate(worker){
+      if (!updateBtn) return;
+      updateBtn.hidden = false;
+      updateBtn.onclick = () => worker.postMessage('SKIP_WAITING');
     }
 
-    if (reg.waiting) promptUpdate(reg.waiting);
+    if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
 
     reg.addEventListener('updatefound', () => {
       const nw = reg.installing;
       if (!nw) return;
       nw.addEventListener('statechange', () => {
         if (nw.state === 'installed' && navigator.serviceWorker.controller){
-          promptUpdate(nw);
+          showUpdate(nw);
         }
       });
     });
@@ -132,6 +133,7 @@ if ('serviceWorker' in navigator){
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (current) location.reload();
     current = navigator.serviceWorker.controller;
+    if (updateBtn) updateBtn.hidden = true;
   });
 }
 
@@ -325,6 +327,13 @@ async function renderSettings(){
 
   $('#diag-clear').onclick = async ()=>{ await Log.clear(); alert('Logs cleared'); };
   $('#diag-logs').textContent = (await Log.all()).join('\n');
+
+  try {
+    const {version} = await fetch('./package.json').then(r=>r.json());
+    $('#about-version').textContent = version;
+  } catch(e) {
+    $('#about-version').textContent = 'n/a';
+  }
 }
 
 // Import/Export + History
