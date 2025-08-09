@@ -21,11 +21,17 @@ function wireCancelButtons(scope = document) {
 }
 
 // Attach bottom tab bar listeners after DOM exists
+// Attach bottom tab bar with event delegation (robust)
 function attachTabBar() {
-  $$('.tabbar button').forEach(b => {
-    b.onclick = () => showTab(b.dataset.tab);
-  });
+  const nav = document.querySelector('.tabbar');
+  if (!nav) return;
+  nav.onclick = (e) => {
+    const btn = e.target.closest('button[data-tab]');
+    if (!btn) return;
+    showTab(btn.dataset.tab);
+  };
 }
+
 
 const Log = {
   key: 'logs',
