@@ -33,6 +33,8 @@ function wireCancelButtons(scope = document) {
   });
 }
 
+function applyTheme(dark){ document.body.classList.toggle('light', !dark); const meta=document.querySelector('meta[name="theme-color"]'); if(meta) meta.setAttribute('content', dark ? '#111827' : '#ffffff'); }
+
 // Hamburger menu: toggle and event delegation
 function attachMenu(){
   const btn = $('#menuBtn');
@@ -79,6 +81,7 @@ const Settings = {
     envAuto: true,
     envRollover: false,
     envHardBlock: false,
+    darkMode: true,
     quiet: true, qStart: 22, qEnd: 7
   },
   async get(){ return (await db.get('settings', this.id)) || {...this.defaults, id:this.id}; },
@@ -174,12 +177,15 @@ if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); 
 document.addEventListener('DOMContentLoaded', async ()=>{
   attachMenu();
   wireCancelButtons();
+  const s = await Settings.get();
+  applyTheme(s.darkMode);
   await monthInit();
   await render();
 });
 
 async function render(){
   const s = await Settings.get();
+  applyTheme(s.darkMode);
   if (s.faceIdRequired){
     if (await FaceID.isSupported()){
       if (!FaceID.isUnlocked()) return renderLock();
@@ -297,6 +303,9 @@ async function renderSettings(){
     catch(e){ alert(e.message||'Failed'); }
   };
   $('#set-faceid').onchange = async ()=>{ await Settings.save({faceIdRequired: $('#set-faceid').checked}); };
+
+  $('#set-dark-mode').checked = s.darkMode;
+  $('#set-dark-mode').onchange = async ()=>{ const dark = $('#set-dark-mode').checked; applyTheme(dark); await Settings.save({darkMode: dark}); };
 
   $('#set-budget').value = s.monthlyBudget;
   $('#set-startday').value = s.startDay;
