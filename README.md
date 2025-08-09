@@ -15,4 +15,4 @@ Open the URL in Safari → **Share → Add to Home Screen**.
 
 ## Features
 - Swipe left on an expense to delete it from the list.
-- Backup all data to a JSON file and restore from a previous backup.
+- Backup all data to a JSON file and restore from a previous backup, choosing where the file is saved.

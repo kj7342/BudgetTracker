@@ -382,9 +382,23 @@ async function renderImportExport(){
   $('#backup-json').onclick = async ()=>{
     const data = await createBackup();
     const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
-    const url = URL.createObjectURL(blob);
-    const a = Object.assign(document.createElement('a'), {href:url, download:'backup.json'});
-    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    if (window.showSaveFilePicker) {
+      try {
+        const handle = await window.showSaveFilePicker({
+          suggestedName: 'backup.json',
+          types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
+        });
+        const writable = await handle.createWritable();
+        await writable.write(blob);
+        await writable.close();
+      } catch (err) {
+        /* ignore if user cancels */
+      }
+    } else {
+      const url = URL.createObjectURL(blob);
+      const a = Object.assign(document.createElement('a'), {href:url, download:'backup.json'});
+      document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+    }
   };
   $('#restore-json').onchange = async (e)=>{
     const file = e.target.files[0]; if (!file) return; const text = await file.text();
