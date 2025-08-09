@@ -1,6 +1,7 @@
 import { db } from './db.js';
 import { FaceID } from './faceid.js';
 import { parseCSV } from './parseCSV.js';
+import { createBackup, loadBackup } from './backup.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -370,6 +371,19 @@ async function renderImportExport(){
       await addTransaction({ id: id||crypto.randomUUID(), amount:Number(amount), date, note:noteQuoted.replace(/^"|"$/g,'').replaceAll('""','"'), categoryId:catId });
     }
     alert('Imported'); render();
+  };
+
+  $('#backup-json').onclick = async ()=>{
+    const data = await createBackup();
+    const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
+    const url = URL.createObjectURL(blob);
+    const a = Object.assign(document.createElement('a'), {href:url, download:'backup.json'});
+    document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
+  };
+  $('#restore-json').onchange = async (e)=>{
+    const file = e.target.files[0]; if (!file) return; const text = await file.text();
+    const data = JSON.parse(text); await loadBackup(data);
+    alert('Backup loaded'); render();
   };
 }
 

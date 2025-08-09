@@ -26,5 +26,6 @@ export const db = (() => {
   async function put(store, value) { const t = await tx([store],'readwrite'); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.put(value); r.onsuccess=()=>res(value); r.onerror=()=>rej(r.error) }); }
   async function del(store, key) { const t = await tx([store],'readwrite'); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.delete(key); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }); }
   async function all(store) { const t = await tx([store]); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.getAll(); r.onsuccess=()=>res(r.result||[]); r.onerror=()=>rej(r.error) }); }
-  return { get, put, del, all };
+  async function clear(store) { const t = await tx([store],'readwrite'); const s = t.objectStore(store); return await new Promise((res, rej)=>{ const r = s.clear(); r.onsuccess=()=>res(); r.onerror=()=>rej(r.error) }); }
+  return { get, put, del, all, clear };
 })();
