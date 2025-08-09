@@ -122,8 +122,42 @@ button:focus-visible {
   height: 24px;
 }
 input, select, button { font-size: 16px; }
-input, select { width: 100%; padding: 8px; border-radius: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); }
-dialog { border: none; border-radius: 16px; padding: 16px; background: var(--dialog-bg); color: var(--text); width: min(480px, 92vw); }
+input, select {
+  width: 100%;
+  padding: 10px 14px;
+  border-radius: 12px;
+  border: 1px solid var(--input-border);
+  background: var(--input-bg);
+  color: var(--text);
+  transition: border-color .2s, box-shadow .2s;
+}
+input:focus, select:focus {
+  border-color: var(--primary-bg);
+  box-shadow: 0 0 0 2px var(--primary-bg);
+  outline: none;
+}
+dialog {
+  border: none;
+  border-radius: 16px;
+  padding: 20px;
+  background: var(--dialog-bg);
+  color: var(--text);
+  width: min(420px, 90vw);
+  box-shadow: 0 10px 30px rgba(0,0,0,.4);
+}
+dialog form {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+dialog form label {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+dialog menu {
+  margin-top: 16px;
+}
 dialog::backdrop { background: rgba(0,0,0,.5); }
 h1, h2, h3 { color: var(--text); }
 a { color: var(--link); }
