@@ -3,6 +3,7 @@ import { FaceID } from './faceid.js';
 import { parseCSV } from './parseCSV.js';
 import { createBackup, loadBackup } from './backup.js';
 import { num } from './num.js';
+import { linkCreditCard, listCreditCards, getCreditCard, getCreditCardTransactions } from './creditCards.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -204,6 +205,7 @@ function showTab(name, silent){
   if (!silent) history.replaceState({}, '', `#${name}`);
   if (name==='summary') renderSummary();
   if (name==='transactions') renderTx();
+  if (name==='creditcards') renderCreditCards();
   if (name==='categories') renderCats();
   if (name==='expenses') renderExpenses();
   if (name==='settings') renderSettings();
@@ -249,6 +251,22 @@ async function renderSummary(){
   const capBox = $('#cap-warnings');
   if (warnings.length){ capBox.style.display='block'; capBox.querySelector('#cap-list').innerHTML = warnings.map(w=>`<li>${w}</li>`).join(''); }
   else capBox.style.display='none';
+
+  const cards = await listCreditCards();
+  const ccBox = $('#sum-cc-box');
+  if (ccBox){
+    if (cards.length){
+      ccBox.style.display = 'block';
+      const list = $('#sum-cc-list');
+      list.innerHTML = cards.map(c => `<li class="row between clickable" data-id="${c.id}" tabindex="0"><div>${c.name}</div><div>${fmt(c.balance)}</div></li>`).join('');
+      list.querySelectorAll('li[data-id]').forEach(li => {
+        li.addEventListener('click', () => viewCardTransactions(li.dataset.id, 'summary'));
+        li.addEventListener('keydown', e => { if (e.key==='Enter' || e.key===' '){ e.preventDefault(); viewCardTransactions(li.dataset.id, 'summary'); } });
+      });
+    } else {
+      ccBox.style.display = 'none';
+    }
+  }
 
   const txList = $('#sum-tx-list');
   if (txList){
@@ -332,6 +350,47 @@ async function renderTx(){
     });
   });
   $('#tx-add').addEventListener('click', ()=>openAddTx());
+}
+
+// Credit Cards
+async function renderCreditCards(){
+  const list = $('#card-list');
+  const cards = await listCreditCards();
+  list.innerHTML = cards.map(c => `<li class="row between clickable" data-id="${c.id}" tabindex="0"><div>${c.name}</div><div>${fmt(c.balance)}</div></li>`).join('') || '<li class="label">No cards linked</li>';
+  list.querySelectorAll('li[data-id]').forEach(li => {
+    li.addEventListener('click', () => viewCardTransactions(li.dataset.id, 'creditcards'));
+    li.addEventListener('keydown', e => { if (e.key==='Enter' || e.key===' '){ e.preventDefault(); viewCardTransactions(li.dataset.id, 'creditcards'); } });
+  });
+  $('#card-add').addEventListener('click', ()=>openLinkCard());
+}
+
+async function openLinkCard(){
+  const dlg = $('#dlg-link-card'); const f = $('#form-link-card');
+  f.name.value = '';
+  f.provider.value = '';
+  f.balance.value = '';
+  dlg.showModal();
+  wireCancelButtons(dlg);
+  wireCurrencyInputs(dlg);
+
+  dlg.onclose = async ()=>{
+    if (dlg.returnValue==='ok'){
+      await linkCreditCard({ name: f.name.value.trim(), provider: f.provider.value.trim(), balance: num(f.balance.value) });
+      renderCreditCards();
+      renderSummary();
+    }
+  };
+}
+
+async function viewCardTransactions(cardId, backTab='creditcards'){
+  const tpl = $('#tpl-cardtx');
+  $('#view').innerHTML = tpl.innerHTML;
+  const card = await getCreditCard(cardId);
+  $('#cardtx-name').textContent = card?.name || 'Card';
+  const list = $('#cardtx-list');
+  const txs = await getCreditCardTransactions(cardId);
+  list.innerHTML = txs.map(t => `<li class="row between"><div><b>${t.description||t.note||''}</b><br><span class="label">${t.date||''}</span></div><div>${fmt(t.amount)}</div></li>`).join('') || '<li class="label">No transactions</li>';
+  $('#cardtx-back').addEventListener('click', ()=>showTab(backTab));
 }
 
 // Categories
