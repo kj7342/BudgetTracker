@@ -1,1 +1,1 @@
-Top hamburger menu version. Deploy via GitHub Pages (Deploy from a branch).
+Top hamburger menu version. Deploy via GitHub Pages (from a branch).
