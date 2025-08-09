@@ -12,3 +12,6 @@ This repo is prepped for **GitHub Pages** deployment.
 
 ## iPhone Install
 Open the URL in Safari → **Share → Add to Home Screen**.
+
+## Features
+- Swipe left on an expense to delete it from the list.
