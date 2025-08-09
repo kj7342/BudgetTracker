@@ -494,6 +494,19 @@ async function openTxDialog(tx){
   f.date.value = tx?.date || todayStr();
   f.note.value = tx?.note || '';
   f.category.value = tx?.categoryId || '';
+  const delBtn = $('#tx-delete');
+  if (tx){
+    delBtn.hidden = false;
+    delBtn.onclick = async ()=>{
+      await deleteTransaction(tx.id);
+      dlg.close('cancel');
+      await render();
+      toast('Transaction deleted');
+    };
+  } else {
+    delBtn.hidden = true;
+    delBtn.onclick = null;
+  }
   dlg.showModal();
   wireCancelButtons(dlg);
   wireCurrencyInputs(dlg);
@@ -519,6 +532,20 @@ async function openExpenseDialog(exp){
   dlg.querySelector('h3').textContent = exp ? 'Edit Expense' : 'Add Expense';
   f.name.value = exp?.name || '';
   f.amount.value = exp?.amount || '';
+  const delBtn = $('#exp-delete');
+  if (exp){
+    delBtn.hidden = false;
+    delBtn.onclick = async ()=>{
+      await deleteExpense(exp.id);
+      dlg.close('cancel');
+      renderExpenses();
+      renderSummary();
+      toast('Expense deleted');
+    };
+  } else {
+    delBtn.hidden = true;
+    delBtn.onclick = null;
+  }
   dlg.showModal();
   wireCancelButtons(dlg);
   wireCurrencyInputs(dlg);
