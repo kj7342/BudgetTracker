@@ -108,12 +108,31 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 if ('serviceWorker' in navigator){
+  navigator.serviceWorker.register('./sw.js').then(reg => {
+    function promptUpdate(worker){
+      if (confirm('Update available. Reload?')){
+        worker.postMessage('SKIP_WAITING');
+      }
+    }
+
+    if (reg.waiting) promptUpdate(reg.waiting);
+
+    reg.addEventListener('updatefound', () => {
+      const nw = reg.installing;
+      if (!nw) return;
+      nw.addEventListener('statechange', () => {
+        if (nw.state === 'installed' && navigator.serviceWorker.controller){
+          promptUpdate(nw);
+        }
+      });
+    });
+  });
+
   let current = navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (current) location.reload();
     current = navigator.serviceWorker.controller;
   });
-  navigator.serviceWorker.register('./sw.js');
 }
 
 // Boot
