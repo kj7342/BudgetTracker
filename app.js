@@ -456,11 +456,13 @@ async function renderImportExport(){
 
   $('#backup-json').onclick = async ()=>{
     const data = await createBackup();
+    const timestamp = data.timestamp.replace(/[:.]/g, '-');
+    const filename = `budget_backup_${timestamp}.json`;
     const blob = new Blob([JSON.stringify(data)], {type:'application/json'});
     if (window.showSaveFilePicker) {
       try {
         const handle = await window.showSaveFilePicker({
-          suggestedName: 'backup.json',
+          suggestedName: filename,
           types: [{ description: 'JSON Files', accept: { 'application/json': ['.json'] } }]
         });
         const writable = await handle.createWritable();
@@ -471,7 +473,7 @@ async function renderImportExport(){
       }
     } else {
       const url = URL.createObjectURL(blob);
-      const a = Object.assign(document.createElement('a'), {href:url, download:'backup.json'});
+      const a = Object.assign(document.createElement('a'), {href:url, download:filename});
       document.body.appendChild(a); a.click(); a.remove(); URL.revokeObjectURL(url);
     }
   };
