@@ -369,13 +369,14 @@ async function openLinkCard(){
   f.name.value = '';
   f.provider.value = '';
   f.balance.value = '';
+  f.bankApiUrl.value = '';
   dlg.showModal();
   wireCancelButtons(dlg);
   wireCurrencyInputs(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
-      await linkCreditCard({ name: f.name.value.trim(), provider: f.provider.value.trim(), balance: num(f.balance.value) });
+      await linkCreditCard({ name: f.name.value.trim(), provider: f.provider.value.trim(), balance: num(f.balance.value), bankApiUrl: f.bankApiUrl.value.trim() });
       renderCreditCards();
       renderSummary();
     }

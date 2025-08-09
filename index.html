@@ -221,7 +221,8 @@
         <p>To pull balances and transactions automatically:</p>
         <ol>
           <li>Open the <b>Credit Cards</b> tab.</li>
-          <li>Press <b>Link</b> and enter your bank's API URL for the card.</li>
+          <li>Press <b>Link</b>, enter your card details and paste your bank's API URL.</li>
+          <li>The API URL is usually available from your bank or card provider's developer portal.</li>
           <li>Save to sync the latest credit card information.</li>
         </ol>
       </div>
@@ -291,6 +292,8 @@
       <label>Name <input name="name" required></label>
       <label>Provider <input name="provider"></label>
       <label>Balance <input name="balance" inputmode="decimal"></label>
+      <label>Bank API URL <input name="bankApiUrl" type="url" placeholder="https://bank.example/api/card"></label>
+      <p class="label">Paste the API endpoint from your bank to enable automatic syncing.</p>
       <menu class="row between">
         <button value="cancel">Cancel</button>
         <button class="primary" value="ok">Save</button>
