@@ -67,6 +67,9 @@ pre { white-space: pre-wrap; word-break: break-word; }
 .menu button { background: transparent; border: 1px solid var(--menu-button-border); color: var(--text); border-radius: 10px; padding: 10px; text-align: left; }
 .menu button:hover { background: var(--menu-button-hover); }
 
+.list li.paid { background: #14532d; }
+body.light .list li.paid { background: #bbf7d0; }
+
 body.light {
   color-scheme: light;
   --bg: #f9fafb;

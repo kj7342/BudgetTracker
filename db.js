@@ -15,8 +15,7 @@ export const db = (() => {
           os.createIndex('byDate','date');
           os.createIndex('byCategory','categoryId');
         }
-        if (!d.objectStoreNames.contains('carry')) d.createObjectStore('carry', { keyPath: 'id' });
-        if (!d.objectStoreNames.contains('events')) d.createObjectStore('events', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('expenses')) d.createObjectStore('expenses', { keyPath: 'id' });
       };
       req.onsuccess = () => resolve(_db = req.result);
       req.onerror = () => reject(req.error);
