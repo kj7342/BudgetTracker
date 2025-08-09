@@ -125,6 +125,7 @@ input, select, button { font-size: 16px; }
 input, select {
   width: 100%;
   padding: 10px 14px;
+  box-sizing: border-box;
   border-radius: 12px;
   border: 1px solid var(--input-border);
   background: var(--input-bg);
