@@ -4,8 +4,10 @@ import { FaceID } from './faceid.js';
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => (new Intl.NumberFormat(undefined, {style:'currency', currency:'USD'})).format(Number(n||0));
-const todayStr = () => new Date().toISOString().slice(0,10);
-const monthStart = (d=new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
+const pad = n => String(n).padStart(2, '0');
+const dateStr = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
+const todayStr = () => dateStr(new Date());
+const monthStart = (d=new Date()) => dateStr(new Date(d.getFullYear(), d.getMonth(), 1));
 
 // Tiny toast helper
 function toast(msg){
