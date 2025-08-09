@@ -27,6 +27,8 @@
     <button type="button" data-tab="categories" role="menuitem">Categories</button>
     <button type="button" data-tab="settings" role="menuitem">Settings</button>
     <button type="button" data-tab="importexport" role="menuitem">Import/Export</button>
+    <button type="button" data-tab="help" role="menuitem">Help</button>
+    <button type="button" data-tab="about" role="menuitem">About</button>
   </aside>
 
   <main id="view" class="container" tabindex="-1"></main>
@@ -157,10 +159,6 @@
           </details>
         </div>
 
-      <div class="card">
-        <h3>About</h3>
-        <p>Version: <span id="about-version"></span></p>
-      </div>
     </section>
   </template>
 
@@ -177,6 +175,33 @@
         </div>
       </section>
     </template>
+
+  <template id="tpl-help">
+    <section>
+      <h2>Help</h2>
+      <div class="card">
+        <p>Use the menu to switch between sections of the app.</p>
+        <ul>
+          <li><b>Summary</b>: overview of spending and budget.</li>
+          <li><b>Transactions</b>: view or add purchases.</li>
+          <li><b>Expenses</b>: manage recurring costs.</li>
+          <li><b>Categories</b>: organize where your money goes.</li>
+          <li><b>Import/Export</b>: backup or restore your data.</li>
+          <li><b>Settings</b>: adjust appearance and preferences.</li>
+        </ul>
+      </div>
+    </section>
+  </template>
+
+  <template id="tpl-about">
+    <section>
+      <h2>About</h2>
+      <div class="card">
+        <p>Version: <span id="about-version"></span></p>
+        <button id="about-check-update" class="primary" type="button">Check for Update</button>
+      </div>
+    </section>
+  </template>
 
   <dialog id="dlg-add-tx">
     <form method="dialog" id="form-add-tx">
