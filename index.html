@@ -53,7 +53,7 @@
             <div class="big" id="sum-spent">$0.00</div>
           </div>
           <div style="flex:1"></div>
-          <div class="right">
+          <div class="right clickable" id="sum-budget-box" tabindex="0" role="button">
             <div class="label">Budget</div>
             <div class="big" id="sum-budget">$2,000.00</div>
           </div>
@@ -206,6 +206,17 @@
       <h3>Add Expense</h3>
       <label>Name <input name="name" required></label>
       <label>Amount <input name="amount" inputmode="decimal" required></label>
+      <menu class="row between">
+        <button value="cancel">Cancel</button>
+        <button class="primary" value="ok">Save</button>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-edit-budget">
+    <form method="dialog" id="form-edit-budget">
+      <h3>Edit Budget</h3>
+      <label>Monthly Budget <input name="budget" inputmode="decimal" required></label>
       <menu class="row between">
         <button value="cancel">Cancel</button>
         <button class="primary" value="ok">Save</button>

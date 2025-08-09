@@ -219,6 +219,12 @@ async function renderSummary(){
   if (warnings.length){ capBox.style.display='block'; capBox.querySelector('#cap-list').innerHTML = warnings.map(w=>`<li>${w}</li>`).join(''); }
   else capBox.style.display='none';
 
+  const budgetBox = $('#sum-budget-box');
+  if (budgetBox){
+    budgetBox.addEventListener('click', ()=>openEditBudget());
+    budgetBox.addEventListener('keydown', e=>{ if (e.key==='Enter' || e.key===' '){ e.preventDefault(); openEditBudget(); } });
+  }
+
   $('#exp-manage').addEventListener('click', ()=>showTab('expenses'));
 }
 
@@ -423,6 +429,21 @@ async function openExpenseDialog(exp){
     if (dlg.returnValue==='ok'){
       await upsertExpense({ id: exp?.id, name:f.name.value.trim(), amount:f.amount.value, paid: exp?.paid || false });
       renderExpenses(); renderSummary();
+    }
+  };
+}
+
+async function openEditBudget(){
+  const dlg = $('#dlg-edit-budget'); const f = $('#form-edit-budget'); const s = await Settings.get();
+  f.budget.value = s.monthlyBudget;
+  dlg.showModal();
+  wireCancelButtons(dlg);
+
+  dlg.onclose = async ()=>{
+    if (dlg.returnValue==='ok'){
+      await Settings.save({ monthlyBudget: Number(f.budget.value||0) });
+      renderSummary();
+      toast('Budget updated');
     }
   };
 }

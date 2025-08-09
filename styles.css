@@ -48,6 +48,7 @@ html, body { height: 100%; }
 .right { text-align: right; }
 .label { font-size: 12px; color: var(--label); }
 .big { font-size: 22px; font-weight: 700; }
+.clickable { cursor: pointer; }
 .progress { height: 10px; background: var(--progress-bg); border-radius: 8px; margin-top: 10px; }
 .progress > div { height: 10px; background: var(--progress); border-radius: 8px; width: 0%; }
 .primary { background: var(--primary-bg); border: none; color: #fff; border-radius: 10px; padding: 8px 12px; }
