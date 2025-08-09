@@ -20,8 +20,7 @@ function wireCancelButtons(scope = document) {
   });
 }
 
-// Attach bottom tab bar listeners after DOM exists
-// Attach bottom tab bar with event delegation (robust)
+// Attach bottom tab bar with event delegation (works across re-renders)
 function attachTabBar() {
   const nav = document.querySelector('.tabbar');
   if (!nav) return;
@@ -31,6 +30,7 @@ function attachTabBar() {
     showTab(btn.dataset.tab);
   };
 }
+
 
 
 const Log = {
