@@ -492,13 +492,26 @@ async function renderAbout(){
     /* ignore */
   }
   $('#about-version').textContent = current;
+  const updateBtn = $('#about-update');
+  updateBtn.hidden = true;
+  updateBtn.onclick = async ()=>{
+    const reg = await navigator.serviceWorker.getRegistration();
+    try { await reg?.update(); } catch(e) { /* ignore */ }
+    location.reload();
+  };
   $('#about-check-update').onclick = async ()=>{
     try {
       const {version: remote} = await fetch('./package.json', {cache:'no-store'}).then(r=>r.json());
-      if (remote !== current) toast(`Update available: ${remote}. Reload to update.`);
-      else toast('You are using the latest version.');
+      if (remote !== current){
+        toast(`Update available: ${remote}`);
+        updateBtn.hidden = false;
+      } else {
+        toast('You are using the latest version.');
+        updateBtn.hidden = true;
+      }
     } catch(e){
       toast('Unable to check for updates.');
+      updateBtn.hidden = true;
     }
   };
 }
