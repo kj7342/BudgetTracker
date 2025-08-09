@@ -132,7 +132,7 @@ async function render(){
   if (isiPhone && await FaceID.isSupported() && !FaceID.isUnlocked()){
     try {
       if (!localStorage.getItem('bt_faceid_cred')) await FaceID.register();
-      await FaceID.authenticate();
+      else await FaceID.authenticate();
     } catch(e){ console.warn(e); }
   }
   if (s.faceIdRequired && !FaceID.isUnlocked()) return renderLock();
@@ -144,7 +144,11 @@ async function renderLock(){
   $('#view').innerHTML = document.querySelector('#tpl-lock').innerHTML;
   const msg = $('#lock-msg');
   $('#lock-unlock').onclick = async ()=> {
-    try { if (!localStorage.getItem('bt_faceid_cred')) await FaceID.register(); await FaceID.authenticate(); await render(); }
+    try {
+      if (!localStorage.getItem('bt_faceid_cred')) await FaceID.register();
+      else await FaceID.authenticate();
+      await render();
+    }
     catch(e){ msg.textContent = e.message || 'Failed.'; }
   };
 }

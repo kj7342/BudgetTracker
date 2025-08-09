@@ -15,6 +15,7 @@ export const FaceID = {
     if (!cred) throw new Error('Registration failed');
     const rawId = btoa(String.fromCharCode(...new Uint8Array(cred.rawId)));
     localStorage.setItem('bt_faceid_cred', rawId);
+    sessionStorage.setItem('bt_unlocked', '1');
     return true;
   },
   async authenticate(){
