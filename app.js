@@ -226,23 +226,44 @@ async function renderCats(){
 
 async function renderExpenses(){
   const list = $('#expense-list'); const exps = await expenses();
-  list.innerHTML = exps.map(e => `<li class="row between${e.paid?' paid':''}" data-id="${e.id}"><div><b>${e.name}</b></div><div class="row"><div>${fmt(e.amount)}</div><input type="checkbox" data-id="${e.id}" ${e.paid?'checked':''}></div></li>`).join('');
+  list.innerHTML = exps.map(e => 
+    `<li class="swipe-item${e.paid?' paid':''}" data-id="${e.id}">
+       <div class="swipe-content row between">
+         <div><b>${e.name}</b></div>
+         <div class="row"><div>${fmt(e.amount)}</div><input type="checkbox" data-id="${e.id}" ${e.paid?'checked':''}></div>
+       </div>
+       <button class="trash" aria-label="Delete">🗑</button>
+     </li>`).join('');
   list.querySelectorAll('input[type="checkbox"]').forEach(ch=>{
     ch.onchange = async ()=>{ await toggleExpensePaid(ch.dataset.id, ch.checked); renderExpenses(); renderSummary(); };
   });
   list.querySelectorAll('li[data-id]').forEach(li=>{
+    const content = li.querySelector('.swipe-content');
+    const del = li.querySelector('.trash');
+    const max = 80; // width of delete button
     let startX = null;
-    li.addEventListener('pointerdown', e=>{ startX = e.clientX; });
-    li.addEventListener('pointerup', async e=>{
-      if(startX!=null && startX - e.clientX > 60){
-        await deleteExpense(li.dataset.id);
-        renderExpenses();
-        renderSummary();
-        toast('Expense deleted');
-      }
-      startX = null;
+    let curX = 0;
+    const setX = x => { curX = x; content.style.transform = `translateX(${x}px)`; };
+    li.addEventListener('pointerdown', e=>{ startX = e.clientX - curX; li.setPointerCapture(e.pointerId); });
+    li.addEventListener('pointermove', e=>{
+      if(startX==null) return;
+      let x = e.clientX - startX;
+      if(x < -max) x = -max;
+      if(x > 0) x = 0;
+      setX(x);
     });
-    li.addEventListener('pointercancel', ()=> startX=null);
+    const finish = ()=>{
+      if(curX < -max/2) setX(-max); else setX(0);
+      startX = null;
+    };
+    li.addEventListener('pointerup', finish);
+    li.addEventListener('pointercancel', finish);
+    del.addEventListener('click', async e=>{
+      await deleteExpense(li.dataset.id);
+      renderExpenses();
+      renderSummary();
+      toast('Expense deleted');
+    });
   });
   $('#expense-add').onclick = ()=> openAddExpense();
 }
