@@ -191,6 +191,7 @@ function showTab(name, silent){
   if (name==='expenses') renderExpenses();
   if (name==='settings') renderSettings();
   if (name==='importexport') renderImportExport();
+  if (name==='about') renderAbout();
 }
 
 // Summary
@@ -426,12 +427,6 @@ async function renderSettings(){
   $('#diag-clear').onclick = async ()=>{ await Log.clear(); alert('Logs cleared'); };
   $('#diag-logs').textContent = (await Log.all()).join('\n');
 
-  try {
-    const {version} = await fetch('./package.json').then(r=>r.json());
-    $('#about-version').textContent = version;
-  } catch(e) {
-    $('#about-version').textContent = 'n/a';
-  }
 }
 
 // Import/Export + History
@@ -484,6 +479,25 @@ async function renderImportExport(){
     const file = e.target.files[0]; if (!file) return; const text = await file.text();
     const data = JSON.parse(text); await loadBackup(data);
     alert('Backup loaded'); render();
+  };
+}
+
+async function renderAbout(){
+  let current = 'n/a';
+  try {
+    ({version: current} = await fetch('./package.json').then(r=>r.json()));
+  } catch(e){
+    /* ignore */
+  }
+  $('#about-version').textContent = current;
+  $('#about-check-update').onclick = async ()=>{
+    try {
+      const {version: remote} = await fetch('./package.json', {cache:'no-store'}).then(r=>r.json());
+      if (remote !== current) toast(`Update available: ${remote}. Reload to update.`);
+      else toast('You are using the latest version.');
+    } catch(e){
+      toast('Unable to check for updates.');
+    }
   };
 }
 
