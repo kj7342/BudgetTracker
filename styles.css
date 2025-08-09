@@ -56,7 +56,19 @@ html, body { height: 100%; }
 .list li { border-bottom: 1px solid var(--list-border); padding: 10px 4px; touch-action: pan-y; }
 .list li.swipe-item { position: relative; overflow: hidden; }
 .list li .swipe-content { transition: transform .2s; }
-.list li .trash { position: absolute; top: 0; right: 0; bottom: 0; width: 80px; background: var(--neg); border: none; color: #fff; }
+.list li .trash {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  width: 80px;
+  background: var(--neg);
+  border: none;
+  color: #fff;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity .2s;
+}
 input, select, button { font-size: 16px; }
 input, select { width: 100%; padding: 8px; border-radius: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); }
 dialog { border: none; border-radius: 16px; padding: 16px; background: var(--dialog-bg); color: var(--text); width: min(480px, 92vw); }
