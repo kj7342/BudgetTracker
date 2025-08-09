@@ -7,6 +7,19 @@ const fmt = n => (new Intl.NumberFormat(undefined, {style:'currency', currency:'
 const todayStr = () => new Date().toISOString().slice(0,10);
 const monthStart = (d=new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
 
+// Tiny toast helper
+function toast(msg){
+  let t = document.getElementById('bt-toast');
+  if (!t){
+    t = Object.assign(document.createElement('div'), {id:'bt-toast'});
+    Object.assign(t.style, {position:'fixed',bottom:'16px',left:'50%',transform:'translateX(-50%)',
+      background:'#0f172a',color:'#fff',padding:'10px 14px',border:'1px solid #2d3b66',borderRadius:'10px',zIndex:99,opacity:'0',transition:'opacity .2s'});
+    document.body.appendChild(t);
+  }
+  t.textContent = msg; t.style.opacity='1'; setTimeout(()=> t.style.opacity='0', 1400);
+}
+
+
 // Helper: make all Cancel buttons close their parent <dialog>
 function wireCancelButtons(scope = document) {
   scope.querySelectorAll('button[value="cancel"]').forEach(btn => {
@@ -20,15 +33,32 @@ function wireCancelButtons(scope = document) {
   });
 }
 
-// Attach bottom tab bar with event delegation
-function attachTabBar() {
-  const nav = document.querySelector('.tabbar');
-  if (!nav) return;
-  nav.onclick = (e) => {
-    const btn = e.target.closest('button[data-tab]');
-    if (!btn) return;
-    showTab(btn.dataset.tab);
+// Hamburger menu: toggle and event delegation
+function attachMenu(){
+  const btn = $('#menuBtn');
+  const panel = $('#menuPanel');
+  if (!btn || !panel) return;
+
+  const closeMenu = () => { panel.classList.add('hidden'); btn.setAttribute('aria-expanded','false'); };
+  const openMenu = () => { panel.classList.remove('hidden'); btn.setAttribute('aria-expanded','true'); };
+
+  btn.onclick = () => {
+    const open = btn.getAttribute('aria-expanded') === 'true';
+    open ? closeMenu() : openMenu();
   };
+
+  panel.onclick = (e) => {
+    const item = e.target.closest('button[data-tab]');
+    if (!item) return;
+    showTab(item.dataset.tab);
+    closeMenu();
+  };
+
+  // Close on Escape / outside click
+  document.addEventListener('keydown', (e)=>{ if (e.key==='Escape') closeMenu(); });
+  document.addEventListener('click', (e)=>{
+    if (!panel.contains(e.target) && e.target !== btn && !btn.contains(e.target)) closeMenu();
+  });
 }
 
 const Log = {
@@ -142,8 +172,8 @@ if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); 
 
 // Boot
 document.addEventListener('DOMContentLoaded', async ()=>{
-  attachTabBar();        // bottom menu
-  wireCancelButtons();   // global cancel
+  attachMenu();
+  wireCancelButtons();
   await monthInit();
   await render();
 });
@@ -155,8 +185,8 @@ async function render(){
       if (!FaceID.isUnlocked()) return renderLock();
     }
   }
-  const cur = document.querySelector('.tabbar button.active')?.dataset.tab || 'summary';
-  showTab(cur, true);
+  const current = (document.querySelector('#menuPanel button.active')?.dataset.tab) || 'summary';
+  showTab(current, true);
 }
 
 async function renderLock(){
@@ -169,7 +199,8 @@ async function renderLock(){
 }
 
 function showTab(name, silent){
-  $$('.tabbar button').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
+  // mark active in menu
+  $$('#menuPanel button').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
   const tpl = document.querySelector(`#tpl-${name}`);
   $('#view').innerHTML = tpl.innerHTML;
   if (!silent) history.replaceState({}, '', `#${name}`);
@@ -391,4 +422,4 @@ async function openHistory(){
 }
 
 // Route on load
-if (location.hash){ const t = location.hash.slice(1); const btn = document.querySelector(`.tabbar button[data-tab="${t}"]`); if (btn) btn.click(); }
+if (location.hash){ const t = location.hash.slice(1); const btn = document.querySelector(`#menuPanel button[data-tab="${t}"]`); if (btn) btn.click(); }

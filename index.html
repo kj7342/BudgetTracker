@@ -13,20 +13,23 @@
 </head>
 <body>
   <header class="appbar">
+    <button id="menuBtn" aria-label="Menu" aria-expanded="false" aria-controls="menuPanel" class="icon-btn" title="Menu">
+      <span class="bars" aria-hidden="true"></span>
+    </button>
     <h1>Budget Tracker</h1>
-    <button id="installBtn" class="ghost" hidden>Install</button>
+    <button id="installBtn" class="ghost" hidden type="button">Install</button>
   </header>
 
-  <main id="view" class="container"></main>
+  <aside id="menuPanel" class="menu hidden" role="menu">
+    <button type="button" data-tab="summary" role="menuitem">Summary</button>
+    <button type="button" data-tab="transactions" role="menuitem">Transactions</button>
+    <button type="button" data-tab="envelopes" role="menuitem">Envelopes</button>
+    <button type="button" data-tab="categories" role="menuitem">Categories</button>
+    <button type="button" data-tab="settings" role="menuitem">Settings</button>
+    <button type="button" data-tab="importexport" role="menuitem">Import/Export</button>
+  </aside>
 
-  <nav class="tabbar">
-    <button data-tab="summary" class="active">Summary</button>
-    <button data-tab="transactions">Transactions</button>
-    <button data-tab="envelopes">Envelopes</button>
-    <button data-tab="categories">Categories</button>
-    <button data-tab="settings">Settings</button>
-    <button data-tab="importexport">Import/Export</button>
-  </nav>
+  <main id="view" class="container" tabindex="-1"></main>
 
   <template id="tpl-lock">
     <section>
@@ -69,7 +72,7 @@
           <div style="flex:1"></div>
           <div>Remaining: <b id="env-remaining">$0.00</b></div>
         </div>
-        <button id="add-tx-btn" class="primary">Add Transaction</button>
+        <button id="add-tx-btn" class="primary" type="button">Add Transaction</button>
       </div>
     </section>
   </template>
@@ -78,7 +81,7 @@
     <section>
       <div class="row">
         <h2>Transactions</h2>
-        <button id="tx-add" class="primary">Add</button>
+        <button id="tx-add" class="primary" type="button">Add</button>
       </div>
       <ul id="tx-list" class="list"></ul>
     </section>
@@ -102,8 +105,8 @@
       <div class="row">
         <h2>Envelope Budgets</h2>
         <div class="row">
-          <button id="move-funds" class="ghost">Move Funds</button>
-          <button id="history-btn" class="ghost">History</button>
+          <button id="move-funds" class="ghost" type="button">Move Funds</button>
+          <button id="history-btn" class="ghost" type="button">History</button>
         </div>
       </div>
       <ul id="env-list" class="list"></ul>
@@ -116,7 +119,7 @@
       <div class="card">
         <h3>Security</h3>
         <label class="row between"><span>Require Face ID to Unlock</span><input id="set-faceid" type="checkbox"></label>
-        <button id="faceid-setup" class="ghost">(Re)Register Face ID</button>
+        <button id="faceid-setup" class="ghost" type="button">(Re)Register Face ID</button>
         <p class="label">Requires HTTPS and a real domain. Face ID gates access but does not encrypt data.</p>
       </div>
 
@@ -128,7 +131,7 @@
         <label>Start day of month
           <input id="set-startday" type="number" min="1" max="28">
         </label>
-        <button id="set-save" class="primary">Save</button>
+        <button id="set-save" class="primary" type="button">Save</button>
       </div>
 
       <div class="card">
@@ -160,8 +163,8 @@
 
       <div class="card">
         <h3>Diagnostics</h3>
-        <button id="diag-run" class="ghost">Run Month Init</button>
-        <button id="diag-clear" class="ghost">Clear Logs</button>
+        <button id="diag-run" class="ghost" type="button">Run Month Init</button>
+        <button id="diag-clear" class="ghost" type="button">Clear Logs</button>
         <details>
           <summary>Logs</summary>
           <pre id="diag-logs"></pre>
@@ -174,7 +177,7 @@
     <section>
       <h2>Import / Export</h2>
       <div class="card">
-        <button id="export-csv" class="primary">Export Transactions CSV</button>
+        <button id="export-csv" class="primary" type="button">Export Transactions CSV</button>
         <input type="file" id="import-file" accept=".csv,text/csv">
       </div>
 
@@ -217,7 +220,7 @@
   <dialog id="dlg-history">
     <h3>Envelope History</h3>
     <ul id="dlg-hist-list" class="list"></ul>
-    <menu class="row right"><button id="dlg-history-close">Close</button></menu>
+    <menu class="row right"><button id="dlg-history-close" type="button">Close</button></menu>
   </dialog>
 
 </body>
