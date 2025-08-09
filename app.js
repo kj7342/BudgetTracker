@@ -262,7 +262,14 @@ async function renderExpenses(){
     const max = 80; // width of delete button
     let startX = null;
     let curX = 0;
-    const setX = x => { curX = x; content.style.transform = `translateX(${x}px)`; };
+    const setX = x => {
+      curX = x;
+      content.style.transform = `translateX(${x}px)`;
+      const show = x !== 0;
+      del.style.opacity = show ? '1' : '0';
+      del.style.pointerEvents = show ? 'auto' : 'none';
+    };
+    setX(0);
     li.addEventListener('pointerdown', e=>{ startX = e.clientX - curX; li.setPointerCapture(e.pointerId); });
     li.addEventListener('pointermove', e=>{
       if(startX==null) return;
