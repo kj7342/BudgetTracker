@@ -1,5 +1,6 @@
 import { db } from './db.js';
 import { FaceID } from './faceid.js';
+import { parseCSV } from './parseCSV.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -364,12 +365,6 @@ async function renderImportExport(){
   };
   const h = await events();
   $('#hist-list').innerHTML = h.map(e => `<li>${histTitle(e)} <span class="label">${new Date(e.date).toLocaleString()}</span></li>`).join('');
-}
-function parseCSV(line){
-  const r=[]; let cur='', q=false; for (let i=0;i<line.length;i++){ const ch=line[i];
-    if (ch==='"'){ if (q && line[i+1]==='"'){ cur+='"'; i++; } else q = !q; }
-    else if (ch===',' && !q){ r.push(cur); cur=''; } else cur+=ch; }
-  r.push(cur); return r;
 }
 function histTitle(e){
   if (e.type==='transfer') return `Moved ${fmt(e.amount)} from ${e.fromName} to ${e.toName}`;
