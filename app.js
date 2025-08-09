@@ -188,11 +188,14 @@ document.addEventListener('DOMContentLoaded', async ()=>{
 async function render(){
   const s = await Settings.get();
   applyTheme(s.darkMode);
-  if (s.faceIdRequired){
-    if (await FaceID.isSupported()){
-      if (!FaceID.isUnlocked()) return renderLock();
-    }
+  const isiPhone = /iPhone/i.test(navigator.userAgent);
+  if (isiPhone && await FaceID.isSupported() && !FaceID.isUnlocked()){
+    try {
+      if (!localStorage.getItem('bt_faceid_cred')) await FaceID.register();
+      await FaceID.authenticate();
+    } catch(e){ console.warn(e); }
   }
+  if (s.faceIdRequired && !FaceID.isUnlocked()) return renderLock();
   const current = (document.querySelector('#menuPanel button.active')?.dataset.tab) || 'summary';
   showTab(current, true);
 }
