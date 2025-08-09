@@ -29,21 +29,26 @@ function makeMockDb(initial = {}){
 
 test('link and fetch credit card data', async () => {
   const db = makeMockDb();
-  const cardId = await linkCreditCard({ name: 'Mock Card' }, db);
+  const cardId = await linkCreditCard({ name: 'Mock Card', bankApiUrl: 'https://bank.example/api/card' }, db);
   assert.ok(cardId);
 
-  const fetcher = async () => ({
-    ok: true,
-    json: async () => ({
-      balance: 123.45,
-      transactions: [
-        { id: 'tx1', amount: 10 },
-        { amount: 20 }
-      ]
-    })
-  });
+  let calledUrl = null;
+  const fetcher = async (url) => {
+    calledUrl = url;
+    return {
+      ok: true,
+      json: async () => ({
+        balance: 123.45,
+        transactions: [
+          { id: 'tx1', amount: 10 },
+          { amount: 20 }
+        ]
+      })
+    };
+  };
 
   const data = await fetchCreditCardData(cardId, fetcher, db);
+  assert.equal(calledUrl, 'https://bank.example/api/card');
   assert.equal(data.balance, 123.45);
 
   const cards = await listCreditCards(db);
@@ -55,6 +60,17 @@ test('link and fetch credit card data', async () => {
   assert.ok(txs.every(t => t.cardId === cardId));
   assert.ok(txs[0].id);
   assert.ok(txs[1].id);
+});
+
+test('rejects non-https bank API URL and sanitizes url', async () => {
+  const db = makeMockDb();
+  await assert.rejects(
+    () => linkCreditCard({ name: 'Bad', bankApiUrl: 'http://bank.example' }, db),
+    /https/
+  );
+  const id = await linkCreditCard({ name: 'Good', bankApiUrl: 'https://user:pass@bank.example/path?token=1#frag' }, db);
+  const card = await getCreditCard(id, db);
+  assert.equal(card.bankApiUrl, 'https://bank.example/path');
 });
 
 test('dedupe transactions on subsequent fetch and unlink card', async () => {

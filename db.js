@@ -1,7 +1,7 @@
 export const db = (() => {
   const DB_NAME = 'budget-db';
   // Bump the version whenever the database schema changes
-  const VER = 3;
+  const VER = 4;
   let _db;
   function open() {
     return new Promise((resolve, reject) => {
