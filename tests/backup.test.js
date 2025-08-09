@@ -25,6 +25,8 @@ test('backup and restore data', async () => {
   };
   const db = makeMockDb(initial);
   const backup = await createBackup(db);
+  assert.ok(backup.timestamp);
+  assert.match(backup.timestamp, /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/);
   assert.deepStrictEqual(backup.categories, initial.categories);
 
   // Clear and restore
