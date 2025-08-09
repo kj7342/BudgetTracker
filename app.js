@@ -7,6 +7,19 @@ const fmt = n => (new Intl.NumberFormat(undefined, {style:'currency', currency:'
 const todayStr = () => new Date().toISOString().slice(0,10);
 const monthStart = (d=new Date()) => new Date(d.getFullYear(), d.getMonth(), 1).toISOString().slice(0,10);
 
+// Helper: make all Cancel buttons close their parent <dialog>
+function wireCancelButtons(scope = document) {
+  scope.querySelectorAll('button[value="cancel"]').forEach(btn => {
+    // Avoid double-binding if dialog is reopened
+    btn.__btCancelWired || btn.addEventListener('click', e => {
+      e.preventDefault(); // bypass form required/validation
+      const dlg = btn.closest('dialog');
+      if (dlg) dlg.close('cancel');
+    });
+    btn.__btCancelWired = true;
+  });
+}
+
 const Log = {
   key: 'logs',
   async all(){ return (await db.get('settings', this.key))?.lines || []; },
@@ -42,7 +55,12 @@ async function addEvent(e){ await db.put('events', { id:crypto.randomUUID(), dat
 async function events(){ return (await db.all('events')).sort((a,b)=>b.date.localeCompare(a.date)); }
 
 function num(v){ const n = Number(v); return isFinite(n) ? n : null; }
-function isQuiet(now, s){ const h = now.getHours(); if (!s.quiet) return false; return (s.qStart<=s.qEnd) ? (h>=s.qStart && h<s.qEnd) : (h>=s.qStart || h<s_qEnd); }
+function isQuiet(now, s){
+  const h = now.getHours();
+  if (!s.quiet) return false;
+  // fixed typo: s_qEnd -> s.qEnd
+  return (s.qStart<=s.qEnd) ? (h>=s.qStart && h<s.qEnd) : (h>=s.qStart || h<s.qEnd);
+}
 
 async function ensureBuffer(){
   const cats = await categories();
@@ -108,7 +126,11 @@ $('#add-tx-btn')?.addEventListener('click', ()=>openAddTx());
 window.addEventListener('beforeinstallprompt', (e) => { e.preventDefault(); const b = $('#installBtn'); b.hidden=false; b.onclick=async ()=>{ e.prompt(); b.hidden=true; }; });
 if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
 
-document.addEventListener('DOMContentLoaded', async ()=>{ await monthInit(); await render(); });
+document.addEventListener('DOMContentLoaded', async ()=>{
+  await monthInit();
+  wireCancelButtons();   // global safety net
+  await render();
+});
 
 async function render(){
   const s = await Settings.get();
@@ -304,10 +326,7 @@ async function openAddTx(){
   const select = f.category; select.innerHTML = '<option value="">Uncategorized</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   f.amount.value=''; f.date.value = todayStr(); f.note.value='';
   dlg.showModal();
-
-  // Ensure Cancel always closes (bypass required validation)
-  const cancelBtn = dlg.querySelector('button[value="cancel"]');
-  cancelBtn?.addEventListener('click', (e)=>{ e.preventDefault(); dlg.close('cancel'); });
+  wireCancelButtons(dlg); // make Cancel always close
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -323,7 +342,7 @@ async function openAddTx(){
   };
 }
 
-// Move Funds (with working Cancel)
+// Move Funds
 async function openMoveFunds(fromId){
   const dlg = $('#dlg-move'); const f=$('#form-move'); const cats = await categories();
   // Ensure buffer exists
@@ -334,10 +353,7 @@ async function openMoveFunds(fromId){
   const options = list.filter(include).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   f.from.innerHTML = options; f.to.innerHTML = options; if (fromId) f.from.value = fromId; f.amount.value = '';
   dlg.showModal();
-
-  // FIX: make Cancel always close the dialog, ignoring required fields
-  const cancelBtn = dlg.querySelector('button[value="cancel"]');
-  cancelBtn?.addEventListener('click', (e)=>{ e.preventDefault(); dlg.close('cancel'); });
+  wireCancelButtons(dlg); // make Cancel always close
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -353,7 +369,9 @@ async function openMoveFunds(fromId){
 async function openHistory(){
   const dlg = $('#dlg-history'); const ul = $('#dlg-hist-list'); const h = await events();
   ul.innerHTML = h.map(e => `<li>${histTitle(e)} <span class="label">${new Date(e.date).toLocaleString()}</span></li>`).join('');
-  dlg.showModal(); $('#dlg-history-close').onclick = ()=> dlg.close();
+  dlg.showModal();
+  wireCancelButtons(dlg); // make Cancel always close
+  $('#dlg-history-close').onclick = ()=> dlg.close();
 }
 
 // Route on load
