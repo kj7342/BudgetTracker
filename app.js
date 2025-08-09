@@ -12,16 +12,15 @@ function wireCancelButtons(scope = document) {
   scope.querySelectorAll('button[value="cancel"]').forEach(btn => {
     if (btn.__btCancelWired) return;
     btn.addEventListener('click', e => {
-      e.preventDefault(); // bypass required/validation
+      e.preventDefault();
       const dlg = btn.closest('dialog');
       if (dlg) dlg.close('cancel');
     });
     btn.__btCancelWired = true;
   });
 }
-//test
 
-// Attach bottom tab bar with event delegation (works across re-renders)
+// Attach bottom tab bar with event delegation
 function attachTabBar() {
   const nav = document.querySelector('.tabbar');
   if (!nav) return;
@@ -31,8 +30,6 @@ function attachTabBar() {
     showTab(btn.dataset.tab);
   };
 }
-
-
 
 const Log = {
   key: 'logs',
@@ -145,8 +142,8 @@ if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); 
 
 // Boot
 document.addEventListener('DOMContentLoaded', async ()=>{
-  attachTabBar();        // ✅ bottom menu now works
-  wireCancelButtons();   // ✅ global cancel safety net
+  attachTabBar();        // bottom menu
+  wireCancelButtons();   // global cancel
   await monthInit();
   await render();
 });
@@ -328,7 +325,7 @@ async function renderImportExport(){
 }
 function parseCSV(line){
   const r=[]; let cur='', q=false; for (let i=0;i<line.length;i++){ const ch=line[i];
-    if (ch==='\"'){ if (q && line[i+1]==='\"'){ cur+='\"'; i++; } else q = !q; }
+    if (ch==='"'){ if (q && line[i+1]==='"'){ cur+='"'; i++; } else q = !q; }
     else if (ch===',' && !q){ r.push(cur); cur=''; } else cur+=ch; }
   r.push(cur); return r;
 }
@@ -345,7 +342,7 @@ async function openAddTx(){
   const select = f.category; select.innerHTML = '<option value="">Uncategorized</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   f.amount.value=''; f.date.value = todayStr(); f.note.value='';
   dlg.showModal();
-  wireCancelButtons(dlg); // ensure Cancel works
+  wireCancelButtons(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -363,7 +360,8 @@ async function openAddTx(){
 
 // Move Funds
 async function openMoveFunds(fromId){
-  const dlg = $('#dlg-move'); const f=$('#form-move');
+  const dlg = $('#dlg-move'); const f=$('#form-move'); const cats = await categories();
+  // Ensure buffer exists
   const existing = (await categories()).find(c=>c.name==='General Buffer');
   if (!existing) await ensureBuffer();
   const list = await categories();
@@ -371,7 +369,7 @@ async function openMoveFunds(fromId){
   const options = list.filter(include).map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
   f.from.innerHTML = options; f.to.innerHTML = options; if (fromId) f.from.value = fromId; f.amount.value = '';
   dlg.showModal();
-  wireCancelButtons(dlg); // ensure Cancel works
+  wireCancelButtons(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -388,9 +386,9 @@ async function openHistory(){
   const dlg = $('#dlg-history'); const ul = $('#dlg-hist-list'); const h = await events();
   ul.innerHTML = h.map(e => `<li>${histTitle(e)} <span class="label">${new Date(e.date).toLocaleString()}</span></li>`).join('');
   dlg.showModal();
-  wireCancelButtons(dlg); // ensure Cancel works
+  wireCancelButtons(dlg);
   $('#dlg-history-close').onclick = ()=> dlg.close();
 }
 
-// Route on load (supports deep links)
+// Route on load
 if (location.hash){ const t = location.hash.slice(1); const btn = document.querySelector(`.tabbar button[data-tab="${t}"]`); if (btn) btn.click(); }
