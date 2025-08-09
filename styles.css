@@ -143,6 +143,7 @@ dialog {
   border: none;
   border-radius: 16px;
   padding: 20px;
+  box-sizing: border-box;
   background: var(--dialog-bg);
   color: var(--text);
   width: 80vw;
