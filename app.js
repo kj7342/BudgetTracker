@@ -135,14 +135,31 @@ window.addEventListener('beforeinstallprompt', (e) => {
 if ('serviceWorker' in navigator){
   navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'});
   let current = navigator.serviceWorker.controller;
-  navigator.serviceWorker.addEventListener('controllerchange', () => {
-    if (current) location.reload();
+  navigator.serviceWorker.addEventListener('controllerchange', async () => {
+    if (current){
+      try {
+        const data = await createBackup();
+        localStorage.setItem('bt_pending_backup', JSON.stringify(data));
+      } catch(e){
+        console.warn('Backup before reload failed', e);
+      }
+      location.reload();
+    }
     current = navigator.serviceWorker.controller;
   });
 }
 
 // Boot
 document.addEventListener('DOMContentLoaded', async ()=>{
+  const pending = localStorage.getItem('bt_pending_backup');
+  if (pending){
+    try {
+      await loadBackup(JSON.parse(pending));
+    } catch(e){
+      console.warn('Restoring backup failed', e);
+    }
+    localStorage.removeItem('bt_pending_backup');
+  }
   attachMenu();
   wireCancelButtons();
   const s = await Settings.get();
@@ -497,6 +514,12 @@ async function renderAbout(){
   updateBtn.onclick = async ()=>{
     const reg = await navigator.serviceWorker.getRegistration();
     try { await reg?.update(); } catch(e) { /* ignore */ }
+    try {
+      const data = await createBackup();
+      localStorage.setItem('bt_pending_backup', JSON.stringify(data));
+    } catch(e){
+      console.warn('Backup before reload failed', e);
+    }
     location.reload();
   };
   $('#about-check-update').onclick = async ()=>{
