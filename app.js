@@ -219,6 +219,16 @@ async function renderSummary(){
   if (warnings.length){ capBox.style.display='block'; capBox.querySelector('#cap-list').innerHTML = warnings.map(w=>`<li>${w}</li>`).join(''); }
   else capBox.style.display='none';
 
+  const txList = $('#sum-tx-list');
+  if (txList){
+    const recent = month.slice(0,5);
+    txList.innerHTML = recent.map(t => {
+      const name = cats.find(c=>c.id===t.categoryId)?.name || 'Uncategorized';
+      return `<li class="row between"><div><b>${name}</b><br><span class="label">${t.date}</span></div><div>${fmt(t.amount)}</div></li>`;
+    }).join('') || '<li class="label">No transactions</li>';
+    $('#sum-tx-view').addEventListener('click', ()=>showTab('transactions'));
+  }
+
   const budgetBox = $('#sum-budget-box');
   if (budgetBox){
     budgetBox.addEventListener('click', ()=>openEditBudget());
