@@ -202,14 +202,23 @@ async function renderSummary(){
   const month = tx.filter(t=>t.date>=start && t.date<end);
   const spent = month.reduce((a,b)=>a+Number(b.amount),0);
   $('#sum-spent').textContent = fmt(spent);
+  const budget = Number(s.monthlyBudget||0);
+  $('#sum-spent').classList.toggle('pos', spent <= budget);
+  $('#sum-spent').classList.toggle('neg', spent > budget);
   const pct = Math.min(100, Math.round(100*spent/Number(s.monthlyBudget||1)));
-  $('#sum-progress').style.width = pct + '%';
+  const prog = $('#sum-progress');
+  prog.style.width = pct + '%';
+  prog.classList.toggle('pos', spent <= budget);
+  prog.classList.toggle('neg', spent > budget);
 
   const exps = await expenses();
   const allocated = exps.reduce((a,b)=>a+Number(b.amount||0),0);
   const remaining = Number(s.monthlyBudget||0) - allocated;
   $('#exp-allocated').textContent = fmt(allocated);
-  $('#exp-remaining').textContent = fmt(remaining);
+  const expRemain = $('#exp-remaining');
+  expRemain.textContent = fmt(remaining);
+  expRemain.classList.toggle('neg', remaining < 0);
+  expRemain.classList.toggle('pos', remaining > 0);
 
   const cats = await categories();
   const warnings = [];

@@ -19,6 +19,7 @@
   --input-border: #2d3b66;
   --dialog-bg: #0f152f;
   --link: #93c5fd;
+  --pos: #22c55e;
   --neg: #ff8a8a;
   --menu-bg: #0f172a;
   --menu-border: #1f2a44;
@@ -51,6 +52,8 @@ html, body { height: 100%; }
 .clickable { cursor: pointer; }
 .progress { height: 10px; background: var(--progress-bg); border-radius: 8px; margin-top: 10px; }
 .progress > div { height: 10px; background: var(--progress); border-radius: 8px; width: 0%; }
+.progress > div.pos { background: var(--pos); }
+.progress > div.neg { background: var(--neg); }
 .primary { background: var(--primary-bg); border: none; color: #fff; border-radius: 10px; padding: 8px 12px; }
 .ghost { background: transparent; border: 1px solid var(--ghost-border); color: var(--ghost-text); border-radius: 10px; padding: 6px 10px; }
 .list { list-style: none; padding: 0; margin: 0; }
@@ -86,6 +89,7 @@ h1, h2, h3 { color: var(--text); }
 a { color: var(--link); }
 pre { white-space: pre-wrap; word-break: break-word; }
 .neg { color: var(--neg); }
+.pos { color: var(--pos); }
 .menu { position: fixed; top: 56px; left: 8px; z-index: 4; background: var(--menu-bg); border: 1px solid var(--menu-border); border-radius: 12px; box-shadow: 0 10px 30px rgba(0,0,0,.4); padding: 8px; display: grid; gap: 6px; min-width: 200px; }
 .menu.hidden { display: none; }
 .menu button { background: transparent; border: 1px solid var(--menu-button-border); color: var(--text); border-radius: 10px; padding: 10px; text-align: left; }
@@ -115,6 +119,7 @@ body.light {
   --input-border: #cbd5e1;
   --dialog-bg: #ffffff;
   --link: #1d4ed8;
+  --pos: #16a34a;
   --neg: #dc2626;
   --menu-bg: #ffffff;
   --menu-border: #e5e7eb;
