@@ -24,6 +24,7 @@
     <button type="button" data-tab="summary" role="menuitem">Summary</button>
     <button type="button" data-tab="transactions" role="menuitem">Transactions</button>
     <button type="button" data-tab="expenses" role="menuitem">Expenses</button>
+    <button type="button" data-tab="creditcards" role="menuitem">Credit Cards</button>
     <button type="button" data-tab="categories" role="menuitem">Categories</button>
     <button type="button" data-tab="settings" role="menuitem">Settings</button>
     <button type="button" data-tab="importexport" role="menuitem">Import/Export</button>
@@ -77,6 +78,11 @@
         <button id="exp-manage" class="primary" type="button">Manage Expenses</button>
       </div>
 
+      <div class="card" id="sum-cc-box" style="display:none">
+        <h3>Credit Cards</h3>
+        <ul id="sum-cc-list" class="list"></ul>
+      </div>
+
       <div class="card">
         <h3>Recent Transactions</h3>
         <ul id="sum-tx-list" class="list"></ul>
@@ -114,6 +120,26 @@
         <button id="expense-add" class="primary" type="button">Add</button>
       </div>
       <ul id="expense-list" class="list"></ul>
+    </section>
+  </template>
+
+  <template id="tpl-creditcards">
+    <section>
+      <div class="row">
+        <h2>Credit Cards</h2>
+        <button id="card-add" class="primary" type="button">Link</button>
+      </div>
+      <ul id="card-list" class="list"></ul>
+    </section>
+  </template>
+
+  <template id="tpl-cardtx">
+    <section>
+      <div class="row">
+        <h2 id="cardtx-name"></h2>
+        <button id="cardtx-back" class="ghost" type="button">Back</button>
+      </div>
+      <ul id="cardtx-list" class="list"></ul>
     </section>
   </template>
 
@@ -246,6 +272,19 @@
           <button value="cancel">Cancel</button>
           <button class="primary" value="ok">Save</button>
         </div>
+      </menu>
+    </form>
+  </dialog>
+
+  <dialog id="dlg-link-card">
+    <form method="dialog" id="form-link-card">
+      <h3>Link Credit Card</h3>
+      <label>Name <input name="name" required></label>
+      <label>Provider <input name="provider"></label>
+      <label>Balance <input name="balance" inputmode="decimal"></label>
+      <menu class="row between">
+        <button value="cancel">Cancel</button>
+        <button class="primary" value="ok">Save</button>
       </menu>
     </form>
   </dialog>
