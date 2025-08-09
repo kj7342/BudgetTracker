@@ -133,32 +133,11 @@ window.addEventListener('beforeinstallprompt', (e) => {
 });
 
 if ('serviceWorker' in navigator){
-  const updateBtn = $('#updateBtn');
-  navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'}).then(reg => {
-    function showUpdate(worker){
-      if (!updateBtn) return;
-      updateBtn.hidden = false;
-      updateBtn.onclick = () => worker.postMessage('SKIP_WAITING');
-    }
-
-    if (reg.waiting) reg.waiting.postMessage('SKIP_WAITING');
-
-    reg.addEventListener('updatefound', () => {
-      const nw = reg.installing;
-      if (!nw) return;
-      nw.addEventListener('statechange', () => {
-        if (nw.state === 'installed' && navigator.serviceWorker.controller){
-          showUpdate(nw);
-        }
-      });
-    });
-  });
-
+  navigator.serviceWorker.register('./sw.js', {updateViaCache:'none'});
   let current = navigator.serviceWorker.controller;
   navigator.serviceWorker.addEventListener('controllerchange', () => {
     if (current) location.reload();
     current = navigator.serviceWorker.controller;
-    if (updateBtn) updateBtn.hidden = true;
   });
 }
 
