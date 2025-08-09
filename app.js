@@ -93,6 +93,7 @@ async function upsertCategory(obj){ const id = obj.id || crypto.randomUUID(); aw
 async function deleteCategory(id){ await db.del('categories', id); }
 async function transactions(){ return (await db.all('transactions')).sort((a,b)=>b.date.localeCompare(a.date)); }
 async function addTransaction(t){ t.id=t.id||crypto.randomUUID(); await db.put('transactions', t); }
+async function deleteTransaction(id){ await db.del('transactions', id); }
 async function expenses(){ return await db.all('expenses'); }
 async function upsertExpense(obj){ const id = obj.id || crypto.randomUUID(); await db.put('expenses', { id, name: obj.name, amount: num(obj.amount), paid: !!obj.paid }); return id; }
 async function toggleExpensePaid(id, paid){ const e = await db.get('expenses', id); if (e){ e.paid = paid; await db.put('expenses', e); } }
@@ -267,8 +268,59 @@ async function renderTx(){
   const list = $('#tx-list'); const tx = await transactions(); const cats = await categories();
   list.innerHTML = tx.map(t => {
     const name = cats.find(c=>c.id===t.categoryId)?.name || 'Uncategorized';
-    return `<li><div class="row between"><div><b>${name}</b><br><span class="label">${t.date}</span></div><div>${fmt(t.amount)}</div></div>${t.note?`<div class="label">${t.note}</div>`:''}</li>`;
+    return `<li class="swipe-item" data-id="${t.id}">
+      <div class="swipe-content">
+        <div class="row between"><div><b>${name}</b><br><span class="label">${t.date}</span></div><div>${fmt(t.amount)}</div></div>
+        ${t.note?`<div class="label">${t.note}</div>`:''}
+      </div>
+      <button class="trash" aria-label="Delete">
+        <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6v14a2 2 0 01-2 2H7a2 2 0 01-2-2V6" />
+          <line x1="10" y1="11" x2="10" y2="17" />
+          <line x1="14" y1="11" x2="14" y2="17" />
+        </svg>
+      </button>
+    </li>`;
   }).join('');
+  list.querySelectorAll('li[data-id]').forEach(li=>{
+    const content = li.querySelector('.swipe-content');
+    const del = li.querySelector('.trash');
+    const max = 80; // width of delete button
+    let startX = null;
+    let curX = 0;
+    const setX = x => {
+      curX = x;
+      content.style.transform = `translateX(${x}px)`;
+      const show = x !== 0;
+      del.style.opacity = show ? '1' : '0';
+      del.style.pointerEvents = show ? 'auto' : 'none';
+    };
+    setX(0);
+    li.addEventListener('pointerdown', e=>{ startX = e.clientX - curX; li.setPointerCapture(e.pointerId); });
+    li.addEventListener('pointermove', e=>{
+      if(startX==null) return;
+      let x = e.clientX - startX;
+      if(x < -max) x = -max;
+      if(x > 0) x = 0;
+      setX(x);
+    });
+    const finish = ()=>{
+      if(curX < -max/2) setX(-max); else setX(0);
+      startX = null;
+    };
+    li.addEventListener('pointerup', finish);
+    li.addEventListener('pointercancel', finish);
+    del.addEventListener('click', async e=>{
+      await deleteTransaction(li.dataset.id);
+      renderTx();
+      renderSummary();
+      toast('Transaction deleted');
+    });
+    content.addEventListener('click', e=>{
+      if (e.target.closest('button')) return;
+      openEditTx(li.dataset.id);
+    });
+  });
   $('#tx-add').addEventListener('click', ()=>openAddTx());
 }
 
@@ -447,11 +499,22 @@ async function renderImportExport(){
   };
 }
 
-// Add Transaction
-async function openAddTx(){
+// Add/Edit Transaction
+async function openAddTx(){ openTxDialog(); }
+
+async function openEditTx(id){
+  const tx = (await transactions()).find(t=>t.id===id);
+  if (tx) openTxDialog(tx);
+}
+
+async function openTxDialog(tx){
   const dlg = $('#dlg-add-tx'); const f = $('#form-add-tx'); const cats = await categories();
   const select = f.category; select.innerHTML = '<option value="">Uncategorized</option>' + cats.map(c=>`<option value="${c.id}">${c.name}</option>`).join('');
-  f.amount.value=''; f.date.value = todayStr(); f.note.value='';
+  dlg.querySelector('h3').textContent = tx ? 'Edit Transaction' : 'Add Transaction';
+  f.amount.value = tx?.amount || '';
+  f.date.value = tx?.date || todayStr();
+  f.note.value = tx?.note || '';
+  f.category.value = tx?.categoryId || '';
   dlg.showModal();
   wireCancelButtons(dlg);
   wireCurrencyInputs(dlg);
@@ -459,7 +522,7 @@ async function openAddTx(){
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
       const amount = num(f.amount.value) ?? 0; const date = f.date.value; const categoryId = f.category.value || null; const note = f.note.value || '';
-      await addTransaction({amount, date, note, categoryId}); await render();
+      await addTransaction({ id: tx?.id, amount, date, note, categoryId }); await render();
     }
   };
 }
