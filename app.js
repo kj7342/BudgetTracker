@@ -2,6 +2,7 @@ import { db } from './db.js';
 import { FaceID } from './faceid.js';
 import { parseCSV } from './parseCSV.js';
 import { createBackup, loadBackup } from './backup.js';
+import { num } from './num.js';
 
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
@@ -96,12 +97,6 @@ async function expenses(){ return await db.all('expenses'); }
 async function upsertExpense(obj){ const id = obj.id || crypto.randomUUID(); await db.put('expenses', { id, name: obj.name, amount: num(obj.amount), paid: !!obj.paid }); return id; }
 async function toggleExpensePaid(id, paid){ const e = await db.get('expenses', id); if (e){ e.paid = paid; await db.put('expenses', e); } }
 async function deleteExpense(id){ await db.del('expenses', id); }
-
-function num(v){
-  if (typeof v === 'string') v = v.replace(/[^0-9.\-]/g, '');
-  const n = Number(v);
-  return isFinite(n) ? n : null;
-}
 
 function wireCurrencyInputs(scope = document){
   scope.querySelectorAll('input[inputmode="decimal"]').forEach(inp => {
@@ -379,7 +374,7 @@ async function renderSettings(){
   $('#set-qend').value = s.qEnd;
   $('#set-save').onclick = async ()=>{
     await Settings.save({
-      monthlyBudget: Number($('#set-budget').value||0),
+      monthlyBudget: num($('#set-budget').value) ?? 0,
       startDay: Number($('#set-startday').value||1),
       quiet: $('#set-quiet').checked,
       qStart: Number($('#set-qstart').value||22),
@@ -419,7 +414,7 @@ async function renderImportExport(){
         if (!c){ const newId = await upsertCategory({name:category}); c = (await categories()).find(x=>x.id===newId); }
         catId = c.id;
       }
-      await addTransaction({ id: id||crypto.randomUUID(), amount:Number(amount), date, note:noteQuoted.replace(/^"|"$/g,'').replaceAll('""','"'), categoryId:catId });
+      await addTransaction({ id: id||crypto.randomUUID(), amount:num(amount) ?? 0, date, note:noteQuoted.replace(/^"|"$/g,'').replaceAll('""','"'), categoryId:catId });
     }
     alert('Imported'); render();
   };
@@ -463,7 +458,7 @@ async function openAddTx(){
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
-      const amount = Number(f.amount.value||0); const date = f.date.value; const categoryId = f.category.value || null; const note = f.note.value || '';
+      const amount = num(f.amount.value) ?? 0; const date = f.date.value; const categoryId = f.category.value || null; const note = f.note.value || '';
       await addTransaction({amount, date, note, categoryId}); await render();
     }
   };
@@ -503,7 +498,7 @@ async function openEditBudget(){
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
-      await Settings.save({ monthlyBudget: Number(f.budget.value||0) });
+      await Settings.save({ monthlyBudget: num(f.budget.value) ?? 0 });
       renderSummary();
       toast('Budget updated');
     }
