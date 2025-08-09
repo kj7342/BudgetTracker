@@ -97,7 +97,35 @@ async function upsertExpense(obj){ const id = obj.id || crypto.randomUUID(); awa
 async function toggleExpensePaid(id, paid){ const e = await db.get('expenses', id); if (e){ e.paid = paid; await db.put('expenses', e); } }
 async function deleteExpense(id){ await db.del('expenses', id); }
 
-function num(v){ const n = Number(v); return isFinite(n) ? n : null; }
+function num(v){
+  if (typeof v === 'string') v = v.replace(/[^0-9.\-]/g, '');
+  const n = Number(v);
+  return isFinite(n) ? n : null;
+}
+
+function wireCurrencyInputs(scope = document){
+  scope.querySelectorAll('input[inputmode="decimal"]').forEach(inp => {
+    if (inp.__btCurrencyWired) return;
+    const format = () => {
+      const raw = inp.value.replace(/[^0-9.]/g, '');
+      if (!raw) { inp.value = ''; return; }
+      const [intPart, decPart] = raw.split('.');
+      const intFormatted = Number(intPart).toLocaleString();
+      inp.value = decPart != null ? intFormatted + '.' + decPart : intFormatted;
+    };
+    inp.addEventListener('input', format);
+    inp.addEventListener('focus', () => {
+      const n = num(inp.value);
+      if (n != null) inp.value = String(n);
+    });
+    inp.addEventListener('blur', () => {
+      const n = num(inp.value);
+      if (n != null) inp.value = fmt(n);
+    });
+    if (inp.value) inp.dispatchEvent(new Event('blur'));
+    inp.__btCurrencyWired = true;
+  });
+}
 
 // PWA install prompt + SW
 window.addEventListener('beforeinstallprompt', (e) => {
@@ -180,6 +208,7 @@ function showTab(name, silent){
   $$('#menuPanel button').forEach(b => b.classList.toggle('active', b.dataset.tab===name));
   const tpl = document.querySelector(`#tpl-${name}`);
   $('#view').innerHTML = tpl.innerHTML;
+  wireCurrencyInputs($('#view'));
   if (!silent) history.replaceState({}, '', `#${name}`);
   if (name==='summary') renderSummary();
   if (name==='transactions') renderTx();
@@ -430,6 +459,7 @@ async function openAddTx(){
   f.amount.value=''; f.date.value = todayStr(); f.note.value='';
   dlg.showModal();
   wireCancelButtons(dlg);
+  wireCurrencyInputs(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -454,6 +484,7 @@ async function openExpenseDialog(exp){
   f.amount.value = exp?.amount || '';
   dlg.showModal();
   wireCancelButtons(dlg);
+  wireCurrencyInputs(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -468,6 +499,7 @@ async function openEditBudget(){
   f.budget.value = s.monthlyBudget;
   dlg.showModal();
   wireCancelButtons(dlg);
+  wireCurrencyInputs(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
@@ -484,6 +516,7 @@ async function openEditCategory(cat){
   f.cap.value = cat.cap != null ? cat.cap : '';
   dlg.showModal();
   wireCancelButtons(dlg);
+  wireCurrencyInputs(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
