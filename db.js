@@ -1,6 +1,7 @@
 export const db = (() => {
   const DB_NAME = 'budget-db';
-  const VER = 1;
+  // Bump the version whenever the database schema changes
+  const VER = 3;
   let _db;
   function open() {
     return new Promise((resolve, reject) => {
@@ -16,6 +17,12 @@ export const db = (() => {
           os.createIndex('byCategory','categoryId');
         }
         if (!d.objectStoreNames.contains('expenses')) d.createObjectStore('expenses', { keyPath: 'id' });
+        // New stores for linked credit cards and their transactions
+        if (!d.objectStoreNames.contains('creditCards')) d.createObjectStore('creditCards', { keyPath: 'id' });
+        if (!d.objectStoreNames.contains('cardTransactions')) {
+          const os = d.createObjectStore('cardTransactions', { keyPath: 'id' });
+          os.createIndex('byCard','cardId');
+        }
       };
       req.onsuccess = () => resolve(_db = req.result);
       req.onerror = () => reject(req.error);
@@ -52,5 +59,10 @@ export const db = (() => {
     const t = await transaction([store], 'readwrite');
     await wrapRequest(t.objectStore(store).clear());
   }
-  return { get, put, del, all, clear };
+  async function index(store, indexName, value) {
+    const t = await transaction([store]);
+    const idx = t.objectStore(store).index(indexName);
+    return (await wrapRequest(idx.getAll(value))) || [];
+  }
+  return { get, put, del, all, clear, index };
 })();
