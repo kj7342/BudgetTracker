@@ -79,7 +79,7 @@ const Settings = {
     lastSyncAt: null,
     monthlyBudget: 2000,
     startDay: 1,
-    darkMode: true,
+    darkMode: false,
     quiet: true, qStart: 22, qEnd: 7
   },
   async get(){ return (await db.get('settings', this.id)) || {...this.defaults, id:this.id}; },
