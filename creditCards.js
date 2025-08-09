@@ -1,14 +1,38 @@
 import { db } from './db.js';
 
+function sanitizeBankApiUrl(url){
+  if(!url) return '';
+  let parsed;
+  try {
+    parsed = new URL(url);
+  } catch {
+    throw new Error('Invalid bank API URL');
+  }
+  if(parsed.protocol !== 'https:'){
+    throw new Error('Bank API URL must use https');
+  }
+  parsed.username = '';
+  parsed.password = '';
+  parsed.search = '';
+  parsed.hash = '';
+  return parsed.toString();
+}
+
 /**
  * Link a credit card by saving basic metadata to the database.
- * @param {{id?:string, name:string, provider?:string, balance?:number}} card
+ * @param {{id?:string, name:string, provider?:string, balance?:number, bankApiUrl?:string}} card
  * @param {*} database optional database (for testing)
  * @returns {Promise<string>} id of the stored card
  */
 export async function linkCreditCard(card, database = db){
   const id = card.id || crypto.randomUUID();
-  const stored = { id, name: card.name, provider: card.provider || '', balance: card.balance || 0 };
+  const stored = {
+    id,
+    name: card.name,
+    provider: card.provider || '',
+    bankApiUrl: sanitizeBankApiUrl(card.bankApiUrl),
+    balance: card.balance || 0
+  };
   await database.put('creditCards', stored);
   return id;
 }
@@ -22,11 +46,12 @@ export async function linkCreditCard(card, database = db){
  * @param {*} database optional database
  */
 export async function fetchCreditCardData(cardId, fetcher = fetch, database = db){
-  const res = await fetcher(`/api/creditcards/${cardId}`);
+  const meta = await database.get('creditCards', cardId) || { id: cardId };
+  const endpoint = meta.bankApiUrl ? sanitizeBankApiUrl(meta.bankApiUrl) : `/api/creditcards/${cardId}`;
+  const res = await fetcher(endpoint);
   if (!res || !res.ok) throw new Error('Failed to fetch card data');
   const data = await res.json();
-  const existing = await database.get('creditCards', cardId) || { id: cardId };
-  await database.put('creditCards', { ...existing, balance: data.balance });
+  await database.put('creditCards', { ...meta, balance: data.balance });
   if (Array.isArray(data.transactions)){
     const current = await getCreditCardTransactions(cardId, database);
     const seen = new Set(current.map(t => t.id));
@@ -75,5 +100,6 @@ export async function getCreditCardTransactions(cardId, database = db){
  * @param {*} database optional database
  */
 export async function listCreditCards(database = db){
-  return await database.all('creditCards');
+  const cards = await database.all('creditCards');
+  return cards.map(({ bankApiUrl, ...rest }) => rest);
 }
