@@ -173,7 +173,14 @@ window.addEventListener('beforeinstallprompt', (e) => {
   b.onclick = async ()=>{ e.prompt(); b.hidden = true; };
 });
 
-if ('serviceWorker' in navigator){ navigator.serviceWorker.register('./sw.js'); }
+if ('serviceWorker' in navigator){
+  let current = navigator.serviceWorker.controller;
+  navigator.serviceWorker.addEventListener('controllerchange', () => {
+    if (current) location.reload();
+    current = navigator.serviceWorker.controller;
+  });
+  navigator.serviceWorker.register('./sw.js');
+}
 
 // Boot
 document.addEventListener('DOMContentLoaded', async ()=>{
