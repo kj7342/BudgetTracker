@@ -5,10 +5,9 @@ import { parseCSV } from './parseCSV.js';
 const $ = s => document.querySelector(s);
 const $$ = s => Array.from(document.querySelectorAll(s));
 const fmt = n => (new Intl.NumberFormat(undefined, {style:'currency', currency:'USD'})).format(Number(n||0));
-const pad = n => String(n).padStart(2, '0');
-const dateStr = (d) => `${d.getFullYear()}-${pad(d.getMonth()+1)}-${pad(d.getDate())}`;
-const todayStr = () => dateStr(new Date());
-const monthStart = (d=new Date()) => dateStr(new Date(d.getFullYear(), d.getMonth(), 1));
+const todayStr = () => new Date().toLocaleDateString('en-CA');
+const monthStart = (d = new Date()) =>
+  new Date(d.getFullYear(), d.getMonth(), 1).toLocaleDateString('en-CA');
 
 // Tiny toast helper
 function toast(msg){
