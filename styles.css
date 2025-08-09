@@ -129,12 +129,15 @@ input, select {
   border: 1px solid var(--input-border);
   background: var(--input-bg);
   color: var(--text);
-  transition: border-color .2s, box-shadow .2s;
+  transition: border-color .2s;
 }
 input:focus, select:focus {
   border-color: var(--primary-bg);
-  box-shadow: 0 0 0 2px var(--primary-bg);
   outline: none;
+}
+input:focus-visible, select:focus-visible {
+  outline: 2px solid var(--primary-bg);
+  outline-offset: 2px;
 }
 dialog {
   border: none;
@@ -142,7 +145,8 @@ dialog {
   padding: 20px;
   background: var(--dialog-bg);
   color: var(--text);
-  width: min(420px, 90vw);
+  width: 90vw;
+  max-width: 420px;
   box-shadow: 0 10px 30px rgba(0,0,0,.4);
 }
 dialog form {
