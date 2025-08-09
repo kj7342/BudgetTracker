@@ -1,3 +1,17 @@
+function attachTabBar() {
+  $$('.tabbar button').forEach(b => {
+    b.onclick = () => showTab(b.dataset.tab);
+  });
+}
+
+document.addEventListener('DOMContentLoaded', async () => {
+  attachTabBar();           // ✅ binds bottom menu clicks
+  await monthInit();
+  wireCancelButtons();      // ✅ Cancel buttons work everywhere
+  await render();
+});
+
+
 import { db } from './db.js';
 import { FaceID } from './faceid.js';
 
