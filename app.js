@@ -226,9 +226,23 @@ async function renderCats(){
 
 async function renderExpenses(){
   const list = $('#expense-list'); const exps = await expenses();
-  list.innerHTML = exps.map(e => `<li class="row between${e.paid?' paid':''}"><div><b>${e.name}</b></div><div class="row"><div>${fmt(e.amount)}</div><input type="checkbox" data-id="${e.id}" ${e.paid?'checked':''}></div></li>`).join('');
+  list.innerHTML = exps.map(e => `<li class="row between${e.paid?' paid':''}" data-id="${e.id}"><div><b>${e.name}</b></div><div class="row"><div>${fmt(e.amount)}</div><input type="checkbox" data-id="${e.id}" ${e.paid?'checked':''}></div></li>`).join('');
   list.querySelectorAll('input[type="checkbox"]').forEach(ch=>{
     ch.onchange = async ()=>{ await toggleExpensePaid(ch.dataset.id, ch.checked); renderExpenses(); renderSummary(); };
+  });
+  list.querySelectorAll('li[data-id]').forEach(li=>{
+    let startX = null;
+    li.addEventListener('pointerdown', e=>{ startX = e.clientX; });
+    li.addEventListener('pointerup', async e=>{
+      if(startX!=null && startX - e.clientX > 60){
+        await deleteExpense(li.dataset.id);
+        renderExpenses();
+        renderSummary();
+        toast('Expense deleted');
+      }
+      startX = null;
+    });
+    li.addEventListener('pointercancel', ()=> startX=null);
   });
   $('#expense-add').onclick = ()=> openAddExpense();
 }
