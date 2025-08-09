@@ -53,7 +53,7 @@ html, body { height: 100%; }
 .primary { background: var(--primary-bg); border: none; color: #fff; border-radius: 10px; padding: 8px 12px; }
 .ghost { background: transparent; border: 1px solid var(--ghost-border); color: var(--ghost-text); border-radius: 10px; padding: 6px 10px; }
 .list { list-style: none; padding: 0; margin: 0; }
-.list li { border-bottom: 1px solid var(--list-border); padding: 10px 4px; }
+.list li { border-bottom: 1px solid var(--list-border); padding: 10px 4px; touch-action: pan-y; }
 input, select, button { font-size: 16px; }
 input, select { width: 100%; padding: 8px; border-radius: 10px; border: 1px solid var(--input-border); background: var(--input-bg); color: var(--text); }
 dialog { border: none; border-radius: 16px; padding: 16px; background: var(--dialog-bg); color: var(--text); width: min(480px, 92vw); }
