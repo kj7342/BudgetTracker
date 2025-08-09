@@ -239,13 +239,20 @@ async function renderCats(){
     f.reset(); renderCats();
   });
   const ul = $('#cat-list');
-  ul.innerHTML = cats.map(c => `<li class="row between"><div><b>${c.name}</b><div class="label">Cap: ${c.cap!=null?fmt(c.cap):'—'}</div></div><button data-id="${c.id}" class="ghost">Delete</button></li>`).join('');
+  ul.innerHTML = cats.map(c => `<li class="row between" data-id="${c.id}"><div><b>${c.name}</b><div class="label">Cap: ${c.cap!=null?fmt(c.cap):'—'}</div></div><button data-id="${c.id}" class="ghost">Delete</button></li>`).join('');
+  ul.querySelectorAll('li[data-id]').forEach(li=>{
+    li.addEventListener('click', e=>{
+      if (e.target.closest('button')) return;
+      const cat = cats.find(c=>c.id===li.dataset.id);
+      if (cat) openEditCategory(cat);
+    });
+  });
   ul.querySelectorAll('button[data-id]').forEach(b=> b.onclick = async ()=>{ await deleteCategory(b.dataset.id); renderCats(); });
 }
 
 async function renderExpenses(){
   const list = $('#expense-list'); const exps = await expenses();
-  list.innerHTML = exps.map(e => 
+  list.innerHTML = exps.map(e =>
     `<li class="swipe-item${e.paid?' paid':''}" data-id="${e.id}">
        <div class="swipe-content row between">
          <div><b>${e.name}</b></div>
@@ -289,6 +296,10 @@ async function renderExpenses(){
       renderExpenses();
       renderSummary();
       toast('Expense deleted');
+    });
+    content.addEventListener('click', e=>{
+      if (e.target.closest('input,button')) return;
+      openEditExpense(li.dataset.id);
     });
   });
   $('#expense-add').onclick = ()=> openAddExpense();
@@ -369,15 +380,42 @@ async function openAddTx(){
   };
 }
 async function openAddExpense(){
+  openExpenseDialog();
+}
+
+async function openEditExpense(id){
+  const exp = (await expenses()).find(e=>e.id===id);
+  if (exp) openExpenseDialog(exp);
+}
+
+async function openExpenseDialog(exp){
   const dlg = $('#dlg-add-expense'); const f = $('#form-add-expense');
-  f.name.value=''; f.amount.value='';
+  dlg.querySelector('h3').textContent = exp ? 'Edit Expense' : 'Add Expense';
+  f.name.value = exp?.name || '';
+  f.amount.value = exp?.amount || '';
   dlg.showModal();
   wireCancelButtons(dlg);
 
   dlg.onclose = async ()=>{
     if (dlg.returnValue==='ok'){
-      await upsertExpense({ name:f.name.value.trim(), amount:f.amount.value, paid:false });
+      await upsertExpense({ id: exp?.id, name:f.name.value.trim(), amount:f.amount.value, paid: exp?.paid || false });
       renderExpenses(); renderSummary();
+    }
+  };
+}
+
+async function openEditCategory(cat){
+  const dlg = $('#dlg-edit-cat'); const f = $('#form-edit-cat');
+  f.name.value = cat.name;
+  f.cap.value = cat.cap != null ? cat.cap : '';
+  dlg.showModal();
+  wireCancelButtons(dlg);
+
+  dlg.onclose = async ()=>{
+    if (dlg.returnValue==='ok'){
+      await upsertCategory({ id: cat.id, name: f.name.value.trim(), cap: f.cap.value });
+      renderCats();
+      renderSummary();
     }
   };
 }
